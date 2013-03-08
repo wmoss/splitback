@@ -1,11 +1,23 @@
 <tr><td>
+
   <div class="row span3">
     {{.Timestamp}}
   </div>
+
   {{range $index, $element := .Receivers}}
     <div class="row span3">
       <span class="label label-important">Unpaid</span>
       {{$element.Name}} : ${{index $.Amounts $index}}
     </div>
   {{end}}
+
+  {{if .Key}}
+    <div class=".pull-right">
+      <form data-async data-target="#owed" action="/remove" method="post">
+        <input type="hidden" name="key" value="{{.Key}}"></input>
+        <button type="submit" class="close remove-bill">&times;</button>
+      </form>
+    </div>
+  {{end}}
+
 </td></tr>

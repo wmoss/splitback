@@ -17,6 +17,7 @@ func init() {
 	http.HandleFunc("/signup", signup)
 	http.HandleFunc("/finduser", findUser)
 	http.HandleFunc("/bill", bill)
+	http.HandleFunc("/remove", remove)
 	http.HandleFunc("/", main)
 }
 
@@ -171,6 +172,27 @@ func bill(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, buildOwed(c))
 }
 
+func remove(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	key, _ := datastore.DecodeKey(r.FormValue("key"))
+
+	var bill Bill
+	err := datastore.Get(c, key, &bill)
+	if err == datastore.ErrNoSuchEntity {
+		return
+	}
+
+	_, ukey := getUserBy(c, "Email", user.Current(c).Email)
+	if !ukey.Equal(bill.Sender) {
+		panic("You can't delete a bill that's not yours")
+	}
+
+	datastore.Delete(c, key)
+
+	fmt.Fprint(w, buildOwed(c))
+}
+
 func buildOwed(c appengine.Context) string {
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
 
@@ -182,7 +204,7 @@ func buildOwed(c appengine.Context) string {
 
 	for t := q.Run(c); ; {
 		var bill Bill
-		_, err := t.Next(&bill)
+		key, err := t.Next(&bill)
 		if err == datastore.Done {
 			break
 		}
@@ -205,6 +227,7 @@ func buildOwed(c appengine.Context) string {
 			"Timestamp": time.Unix(int64(bill.Timestamp), 0).Format("Mon, Jan 02 2006 15:04:05 MST"),
 			"Receivers": receivers,
 			"Amounts":   bill.Amounts,
+			"Key":       key.Encode(),
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
 			//Better error response
