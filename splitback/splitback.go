@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -278,59 +279,81 @@ func buildOwe(c appengine.Context) string {
 	return out.String()
 }
 
+func buildPayRow(c appengine.Context, previous *Bill, amount float32, bills string, out *bytes.Buffer) {
+	tmpl, _ := template.ParseFiles("templates/pay-row.html")
+
+	var sender User
+	err := datastore.Get(c, previous.Sender, &sender)
+	if err != nil {
+		panic(err)
+	}
+
+	tc := map[string]interface{}{
+		"Recipient": previous.Sender.Encode(),
+		"Name":      sender.Name,
+		"Amount":    amount,
+		"Bills":     bills,
+	}
+	if err := tmpl.Execute(out, tc); err != nil {
+		panic(err)
+	}
+}
+
 func buildBills(c appengine.Context) string {
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
 
 	q := datastore.NewQuery("Bills").
-		Filter("Receivers =", key)
+		Filter("Receivers =", key).
+		Order("Sender")
 
-	bills := make(map[string]float32)
+	out := bytes.NewBuffer(nil)
+
+	previous := Bill{}
+	amount := float32(0.0)
+	bills := make([]string, 0)
+	first := true
 	for t := q.Run(c); ; {
 		var bill Bill
-		_, err := t.Next(&bill)
+		billKey, err := t.Next(&bill)
 		if err == datastore.Done {
+			if !first {
+				buildPayRow(c, &previous, amount, strings.Join(bills, ","), out)
+			}
 			break
 		}
-		if err != nil {
-			//Really return the error
-			return ""
-		}
-
-		var index int
-		for i, v := range bill.Receivers {
-			if v == key {
-				index = i + 1
-				break
-			}
-		}
-
-		var sender User
-		err = datastore.Get(c, bill.Sender, &sender)
 		if err != nil {
 			panic(err)
 		}
 
-		fmt.Printf("Found bill from %v for %v\n", sender.Name, bill.Amounts[index])
+		index := findInBill(&bill, key)
 
-		if v, ok := bills[sender.Name]; ok {
-			bills[sender.Name] = v + bill.Amounts[index]
+		if bill.Paid[index] {
+			continue
+		}
+
+		if bill.Sender.Equal(previous.Sender) || first {
+			amount += bill.Amounts[index]
+			bills = append(bills, billKey.Encode())
 		} else {
-			bills[sender.Name] = bill.Amounts[index]
+			buildPayRow(c, &previous, amount, strings.Join(bills, ","), out)
+			amount = bill.Amounts[index]
+			bills = []string{billKey.Encode()}
 		}
-	}
 
-	tmpl, _ := template.ParseFiles("templates/pay-row.html")
-	out := bytes.NewBuffer(nil)
-	for k, v := range bills {
-		tc := map[string]interface{}{
-			"Name":   k,
-			"Amount": v,
-		}
-		if err := tmpl.Execute(out, tc); err != nil {
-			//Better error response
-			return ""
-		}
+		first = false
+		previous = bill
 	}
 
 	return out.String()
+}
+
+func findInBill(bill *Bill, key *datastore.Key) (index int) {
+	for i, v := range bill.Receivers {
+		if v.Equal(key) {
+			index = i + 1
+			return
+		}
+	}
+
+	return -1
 }

@@ -1,6 +1,7 @@
 <div class="row">
   <form class=".form-inline" action="/pay" method="post">
-    <input type="hidden" name="Name" value="{{.Name}}">
+    <input type="hidden" name="Recipient" value="{{.Recipient}}">
+    <input type="hidden" name="Bills" value="{{.Bills}}">
     <input type="hidden" name="Amount" value="{{.Amount}}">
     {{.Name}} : ${{.Amount}}
     <button type="submit" class="btn">Pay</button>
