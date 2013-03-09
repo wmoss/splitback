@@ -227,7 +227,8 @@ func buildOwed(c appengine.Context) string {
 		tc := map[string]interface{}{
 			"Timestamp": time.Unix(int64(bill.Timestamp), 0).Format("Mon, Jan 02 2006 15:04:05 MST"),
 			"Receivers": receivers,
-			"Amounts":   bill.Amounts,
+			"Amounts":   bill.Amounts[1:],
+			"Paid":      bill.Paid[1:],
 			"Key":       key.Encode(),
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
@@ -268,11 +269,11 @@ func buildOwe(c appengine.Context) string {
 		tc := map[string]interface{}{
 			"Timestamp": time.Unix(int64(bill.Timestamp), 0).Format("Mon, Jan 02 2006 15:04:05 MST"),
 			"Receivers": []User{sender},
-			"Amounts":   bill.Amounts,
+			"Amounts":   bill.Amounts[1:],
+			"Paid":      bill.Paid[1:],
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
-			//Better error response
-			return ""
+			panic(err)
 		}
 	}
 

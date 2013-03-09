@@ -6,7 +6,11 @@
 
   {{range $index, $element := .Receivers}}
     <div class="row span3">
-      <span class="label label-important">Unpaid</span>
+      {{if index $.Paid $index}}
+        <span class="label label-success">Paid</span>
+      {{else}}
+        <span class="label label-important">Unpaid</span>
+      {{end}}
       {{$element.Name}} : ${{index $.Amounts $index}}
     </div>
   {{end}}
