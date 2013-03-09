@@ -156,22 +156,29 @@ func nowf() float64 {
 func bill(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
-	receivers := make([]*datastore.Key, 0, 2)
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
 
-	amount, _ := strconv.ParseFloat(r.FormValue("Amount0"), 32)
-	amounts := []float32{float32(amount)}
+	recipients := make([]map[string]interface{}, 0)
+	if err := json.Unmarshal(body, &recipients); err != nil {
+		panic(err)
+	}
 
+	receivers := make([]*datastore.Key, 0)
+	amounts := []float32{float32(recipients[0]["amount"].(float64))}
 	paid := []bool{true}
-
-	for i := 1; i < 3; i++ {
-		amount, _ := strconv.ParseFloat(r.FormValue(fmt.Sprintf("Amount%d", i)), 32)
-		if amount > 0 {
-			name := r.FormValue(fmt.Sprintf("User%d", i))
-			_, key := getUserBy(c, "Name", name)
-			receivers = append(receivers, key)
-			amounts = append(amounts, float32(amount))
-			paid = append(paid, false)
+	for _, recipient := range recipients[1:] {
+		if recipient["name"] == "" {
+			continue
 		}
+
+		_, key := getUserBy(c, "Name", recipient["name"].(string))
+		receivers = append(receivers, key)
+		amounts = append(amounts, float32(recipient["amount"].(float64)))
+		paid = append(paid, false)
 	}
 
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
@@ -183,8 +190,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		Timestamp: nowf(),
 	}
 
-	_, err := datastore.Put(c, datastore.NewIncompleteKey(c, "Bills", nil), &bill)
-	if err != nil {
+	if _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "Bills", nil), &bill); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

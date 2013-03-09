@@ -10,26 +10,18 @@
 
     <div class="container-fluid">
       <div class="row-fluid">
-        <div class="span3">
+        <div class="span3" ng-app="splitback">
 
-          <div class="row well">
+          <div class="row well" ng-controller="NewBillCtrl" >
             <legend>New Bill</legend>
 
-            <form class=".form-inline" data-async data-target="#owed" action="/bill" method="post">
+            <form class=".form-inline" ng-submit="addBill()">
               <div>
-                <input type="text" id="amount" name="Amount" class="input-small" placeholder="Amount">
+                <input type="text" id="amount" name="Amount" class="input-small" placeholder="Amount" ng-model="amount" ng-change="adjust()">
               </div>
-              <div class="input-prepend" style="padding-right: 10px">
-                <input type="text" name="User0" id="User0" value="{{.Name}}" disabled>
-                <input type="text" name="Amount0" class="input-mini amount" readonly>
-              </div>
-              <div class="input-prepend" style="padding-right: 10px">
-                <input type="text" name="User1" id="User1" autocomplete="off" data-provide="typeahead" data-source="findUser" placeholder="...">
-                <input type="text" name="Amount1" class="input-mini amount" readonly>
-              </div>
-              <div class="input-prepend" style="padding-right: 10px">
-                <input type="text" name="User2" id="User2" placeholder="...">
-                <input type="text" name="Amount2" class="input-mini amount" readonly>
+              <div class="input-prepend" style="padding-right: 10px" ng-repeat="user in recipients">
+                <input type="text" autocomplete="off" class="name" ng-model="user.name" ng-change="checkMore()" bs-typeahead="findUser" placeholder="...">
+                <input type="text" class="input-mini amount" ng-model="user.amount" readonly>
               </div>
               <button type="submit" class="btn">Send Bill</button>
             </form>
@@ -83,17 +75,25 @@
     {{template "join"}}
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.5/angular.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.0/bootstrap.min.js"></script>
-    <script src="/static/js/main.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/angular-strap/0.6.6/angular-strap.min.js"></script>
+
+    <script src="/static/js/new-bill.js"></script>
     <script src="/static/js/ajax-form.js"></script>
 
-    {{if .New}}
-      <script type="text/javascript">
+    <script type="text/javascript">
+      var name = "{{.Name}}";
+
+      {{if .New}}
         $(document).ready(function() {
           $("#join").modal({"keyboard": false});
         });
-      </script>
-    {{end}}
+      {{end}}
+    </script>
+
+
+
 
   </body>
 </html>
