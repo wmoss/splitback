@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,12 +15,30 @@ import (
 	"time"
 )
 
+type Config struct {
+	User      string
+	Password  string
+	Signature string
+}
+
+var config Config = Config{}
+
 func init() {
 	http.HandleFunc("/signup", signup)
 	http.HandleFunc("/finduser", findUser)
 	http.HandleFunc("/bill", bill)
 	http.HandleFunc("/remove", remove)
+	http.HandleFunc("/pay", pay)
+	http.HandleFunc("/payed", payed)
 	http.HandleFunc("/", main)
+
+	raw, err := ioutil.ReadFile("priv/paypal.json")
+	if err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(raw, &config); err != nil {
+		panic(err)
+	}
 }
 
 func requireLogin(c appengine.Context, w http.ResponseWriter, r *http.Request) bool {
@@ -192,6 +211,50 @@ func remove(w http.ResponseWriter, r *http.Request) {
 	datastore.Delete(c, key)
 
 	fmt.Fprint(w, buildOwed(c))
+}
+
+func pay(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	recipient, _ := datastore.DecodeKey(r.FormValue("Recipient"))
+	amount, _ := strconv.ParseFloat(r.FormValue("Amount"), 32)
+
+	_, sender := getUserBy(c, "Email", user.Current(c).Email)
+
+	url := getPayUrl(c, sender, recipient, r.FormValue("Bills"), float32(amount))
+
+	http.Redirect(w, r, url, http.StatusFound)
+}
+
+func payed(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	sender, _ := datastore.DecodeKey(r.FormValue("Sender"))
+
+	bills_ := strings.Split(r.FormValue("Bills"), ",")
+	billKeys := make([]*datastore.Key, len(bills_))
+	for i, key := range bills_ {
+		billKeys[i], _ = datastore.DecodeKey(key)
+	}
+
+	bills := make([]Bill, len(billKeys))
+	err := datastore.GetMulti(c, billKeys, bills)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, bill := range bills {
+		index := findInBill(&bill, sender)
+
+		bill.Paid[index] = true
+	}
+
+	_, err = datastore.PutMulti(c, billKeys, bills)
+	if err != nil {
+		panic(err)
+	}
+
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func buildOwed(c appengine.Context) string {
