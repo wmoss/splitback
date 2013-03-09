@@ -135,7 +135,10 @@ func getUserBy(c appengine.Context, by string, value string) (user *User, key *d
 	q := datastore.NewQuery("Users").
 		Filter(fmt.Sprintf("%s =", by), value)
 	var users []User
-	keys, _ := q.GetAll(c, &users)
+	keys, err := q.GetAll(c, &users)
+	if err != nil {
+		panic(err)
+	}
 
 	//assert only one
 	if len(users) == 0 {
@@ -201,10 +204,13 @@ func bill(w http.ResponseWriter, r *http.Request) {
 func remove(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
-	key, _ := datastore.DecodeKey(r.FormValue("key"))
+	key, err := datastore.DecodeKey(r.FormValue("key"))
+	if err != nil {
+		panic(err)
+	}
 
 	var bill Bill
-	err := datastore.Get(c, key, &bill)
+	err = datastore.Get(c, key, &bill)
 	if err == datastore.ErrNoSuchEntity {
 		return
 	}
@@ -279,8 +285,7 @@ func buildOwed(c appengine.Context) string {
 			break
 		}
 		if err != nil {
-			//Do something else
-			return ""
+			panic(err)
 		}
 
 		receivers := make([]*User, len(bill.Receivers))
@@ -301,8 +306,7 @@ func buildOwed(c appengine.Context) string {
 			"Key":       key.Encode(),
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
-			//Better error response
-			return ""
+			panic(err)
 		}
 	}
 
@@ -325,8 +329,7 @@ func buildOwe(c appengine.Context) string {
 			break
 		}
 		if err != nil {
-			//Do something else
-			return ""
+			panic(err)
 		}
 
 		var sender User
@@ -350,10 +353,13 @@ func buildOwe(c appengine.Context) string {
 }
 
 func buildPayRow(c appengine.Context, previous *Bill, amount float32, bills string, out *bytes.Buffer) {
-	tmpl, _ := template.ParseFiles("templates/pay-row.html")
+	tmpl, err := template.ParseFiles("templates/pay-row.html")
+	if err != nil {
+		panic(err)
+	}
 
 	var sender User
-	err := datastore.Get(c, previous.Sender, &sender)
+	err = datastore.Get(c, previous.Sender, &sender)
 	if err != nil {
 		panic(err)
 	}
