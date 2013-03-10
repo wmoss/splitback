@@ -30,6 +30,13 @@
           <div class="row well">
             <legend>Settle Bills</legend>
 
+            <div class="row-fluid">
+              <div id="pay-failed" class="alert alert-block alert-error fade in hide">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <p><strong>Your payment failed to process</strong></p>
+              </div>
+            </div>
+
             {{if .Bills}}
               {{.Bills}}
             {{else}}
@@ -84,6 +91,13 @@
 
     <script type="text/javascript">
       var name = "{{.Name}}";
+
+      $(document).ready(function() {
+        if (window.location.search.search("payfailed") > -1) {
+          window.history.replaceState("main", window.document.title, "/");
+          $("#pay-failed").show();
+      }
+      });
 
       {{if .New}}
         $(document).ready(function() {
