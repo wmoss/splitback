@@ -1,0 +1,11 @@
+<tr><td>
+  <div class="row span3">
+    {{.Timestamp}}
+  </div>
+  {{range $index, $element := .Receivers}}
+    <div class="row span3">
+      <span class="label label-important">Unpaid</span>
+      {{$element.Name}} : ${{index $.Amounts $index}}
+    </div>
+  {{end}}
+</td></tr>

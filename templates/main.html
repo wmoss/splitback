@@ -1,0 +1,99 @@
+<html>
+  <head>
+    <title>SplitBack</title>
+
+    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+  </head>
+  <body>
+
+    <legend><h1>Splitback - {{.Name}}</h1></legend>
+
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+
+          <div class="row well">
+            <legend>New Bill</legend>
+
+            <form class=".form-inline" data-async data-target="#owed" action="/bill" method="post">
+              <div>
+                <input type="text" id="amount" name="Amount" class="input-small" placeholder="Amount">
+              </div>
+              <div class="input-prepend" style="padding-right: 10px">
+                <input type="text" name="User0" id="User0" value="{{.Name}}" disabled>
+                <input type="text" name="Amount0" class="input-mini amount" readonly>
+              </div>
+              <div class="input-prepend" style="padding-right: 10px">
+                <input type="text" name="User1" id="User1" autocomplete="off" data-provide="typeahead" data-source="findUser" placeholder="...">
+                <input type="text" name="Amount1" class="input-mini amount" readonly>
+              </div>
+              <div class="input-prepend" style="padding-right: 10px">
+                <input type="text" name="User2" id="User2" placeholder="...">
+                <input type="text" name="Amount2" class="input-mini amount" readonly>
+              </div>
+              <button type="submit" class="btn">Send Bill</button>
+            </form>
+          </div>
+
+          <div class="row well">
+            <legend>Settle Bills</legend>
+
+            {{if .Bills}}
+              {{.Bills}}
+            {{else}}
+              <p class="text-center">You have no bills to settle.</p>
+            {{end}}
+          </div>
+
+        </div>
+
+        <div class="span9">
+          <div class="row well">
+            <legend>Owed To Me</legend>
+
+            <table id="owed" class="table table-striped">
+              {{if .Owed}}
+                <div class="row span3"><strong>Date</strong></div>
+                <div class="row span3"><strong>Debts</strong></div>
+                {{.Owed}}
+              {{else}}
+                <tr><td style="text-align: center">Nobody owes you anything!</td></tr>
+              {{end}}
+            </table>
+          </div>
+
+          <div class="row well">
+            <legend>You Owe</legend>
+
+            <table id="owe" class="table table-striped">
+              {{if .Owe}}
+                <div class="row span3"><strong>Date</strong></div>
+                <div class="row span3"><strong>Debts</strong></div>
+                {{.Owe}}
+              {{else}}
+                <tr><td style="text-align: center">You don't owe anybody anything!</td></tr>
+              {{end}}
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {{template "join"}}
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/ajax-form.js"></script>
+
+    {{if .New}}
+      <script type="text/javascript">
+        $(document).ready(function() {
+          $("#join").modal({"keyboard": false});
+        });
+      </script>
+    {{end}}
+
+  </body>
+</html>
