@@ -392,6 +392,8 @@ func buildBills(c appengine.Context) string {
 	amount := float32(0.0)
 	bills := make([]string, 0)
 	first := true
+	weeklyAmount := float32(0.0)
+	oneWeekAgo := time.Now().Add(-time.Hour * 24 * 7)
 	for t := q.Run(c); ; {
 		var bill Bill
 		billKey, err := t.Next(&bill)
@@ -404,14 +406,27 @@ func buildBills(c appengine.Context) string {
 		if err != nil {
 			panic(err)
 		}
+
 		if bill.Sender.Equal(key) {
+			if bill.Timestamp.After(oneWeekAgo) {
+				for i, v := range bill.DatePaid {
+					if v.After(time.Unix(0, 0)) && !bill.Receivers[i].Equal(key) {
+						weeklyAmount += bill.Amounts[i]
+					}
+				}
+			}
 			continue
 		}
 
 		index := findInBill(&bill, key)
 
 		if bill.DatePaid[index].After(time.Unix(0, 0)) {
+			weeklyAmount += bill.Amounts[index]
 			continue
+		}
+
+		if weeklyAmount > 250 {
+			break
 		}
 
 		if bill.Sender.Equal(previous.Sender) || first {
@@ -425,6 +440,15 @@ func buildBills(c appengine.Context) string {
 
 		first = false
 		previous = bill
+	}
+
+	//Paypal requires we limit to 250 sent or received per week
+	if weeklyAmount > 250 {
+		raw, err := ioutil.ReadFile("templates/over-limit.html")
+		if err != nil {
+			panic(err)
+		}
+		return string(raw)
 	}
 
 	return out.String()
