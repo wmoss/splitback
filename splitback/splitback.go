@@ -127,7 +127,7 @@ type Bill struct {
 	Sender    *datastore.Key
 	Receivers []*datastore.Key
 	Amounts   []float32
-	Paid      []bool
+	DatePaid  []time.Time
 	Timestamp float64
 }
 
@@ -172,7 +172,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 
 	receivers := make([]*datastore.Key, 0)
 	amounts := []float32{float32(recipients[0]["amount"].(float64))}
-	paid := []bool{true}
+	paid := []time.Time{time.Now()}
 	for _, recipient := range recipients[1:] {
 		if recipient["name"] == "" {
 			continue
@@ -181,7 +181,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		_, key := getUserBy(c, "Name", recipient["name"].(string))
 		receivers = append(receivers, key)
 		amounts = append(amounts, float32(recipient["amount"].(float64)))
-		paid = append(paid, false)
+		paid = append(paid, time.Unix(0, 0))
 	}
 
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
@@ -189,7 +189,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		Sender:    key,
 		Receivers: receivers,
 		Amounts:   amounts,
-		Paid:      paid,
+		DatePaid:  paid,
 		Timestamp: nowf(),
 	}
 
@@ -258,7 +258,7 @@ func payed(w http.ResponseWriter, r *http.Request) {
 	for _, bill := range bills {
 		index := findInBill(&bill, sender)
 
-		bill.Paid[index] = true
+		bill.DatePaid[index] = time.Now()
 	}
 
 	_, err = datastore.PutMulti(c, billKeys, bills)
@@ -302,7 +302,7 @@ func buildOwed(c appengine.Context) string {
 			"Timestamp": time.Unix(int64(bill.Timestamp), 0).Format("Mon, Jan 02 2006 15:04:05 MST"),
 			"Receivers": receivers,
 			"Amounts":   bill.Amounts[1:],
-			"Paid":      bill.Paid[1:],
+			"Paid":      getPaid(bill.DatePaid[1:]),
 			"Key":       key.Encode(),
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
@@ -342,7 +342,7 @@ func buildOwe(c appengine.Context) string {
 			"Timestamp": time.Unix(int64(bill.Timestamp), 0).Format("Mon, Jan 02 2006 15:04:05 MST"),
 			"Receivers": []User{sender},
 			"Amounts":   bill.Amounts[1:],
-			"Paid":      bill.Paid[1:],
+			"Paid":      getPaid(bill.DatePaid[1:]),
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
 			panic(err)
@@ -403,7 +403,7 @@ func buildBills(c appengine.Context) string {
 
 		index := findInBill(&bill, key)
 
-		if bill.Paid[index] {
+		if bill.DatePaid[index].After(time.Unix(0, 0)) {
 			continue
 		}
 
@@ -432,4 +432,12 @@ func findInBill(bill *Bill, key *datastore.Key) (index int) {
 	}
 
 	return -1
+}
+
+func getPaid(datePaid []time.Time) []bool {
+	res := make([]bool, len(datePaid))
+	for i, v := range datePaid {
+		res[i] = v.After(time.Unix(0, 0))
+	}
+	return res
 }
