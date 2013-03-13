@@ -2,8 +2,8 @@ var app = angular.module('splitback', ['$strap.directives']);
 
 app.controller("NewBillCtrl", function($scope) {
     $scope.recipients = [
-        {"name": name, "amount": 0},
-        {"name": "", "amount": 0}
+        {"name": name, "amount": 0, "paid": true},
+        {"name": "", "amount": 0, "paid": false}
     ];
 
     $scope.adjust = function() {
@@ -37,7 +37,7 @@ app.controller("NewBillCtrl", function($scope) {
     $scope.checkMore = function() {
         if ($scope.recipients[$scope.recipients.length - 1].name != "") {
             // Expand
-            $scope.recipients[$scope.recipients.length] = {"name": "", "amount": 0};
+            $scope.recipients[$scope.recipients.length] = {"name": "", "amount": 0, "paid": false};
             $scope.adjust()
         } else if ($scope.recipients[$scope.recipients.length - 2].name == "") {
             // Contract
@@ -56,6 +56,17 @@ app.controller("NewBillCtrl", function($scope) {
                 $("#owed").html(data);
             }
         });
+    };
 
+    $scope.togglePaid = function(user) {
+        user.paid = !user.paid;
+    };
+
+    $scope.getButtonClass = function(paid) {
+        return paid ? "btn-success" : "btn-danger";
+    };
+
+    $scope.getButtonText = function(paid) {
+        return paid ? "Paid" : "Unpaid";
     };
 });

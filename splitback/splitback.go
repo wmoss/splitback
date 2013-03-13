@@ -169,7 +169,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 	receivers := make([]*datastore.Key, 0)
 	amounts := make([]float32, 0)
 	paid := make([]time.Time, 0)
-	for i, recipient := range recipients {
+	for _, recipient := range recipients {
 		if recipient["name"] == "" {
 			continue
 		}
@@ -177,7 +177,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		_, key := getUserBy(c, "Name", recipient["name"].(string))
 		receivers = append(receivers, key)
 		amounts = append(amounts, float32(recipient["amount"].(float64)))
-		if i == 0 {
+		if recipient["paid"].(bool) {
 			paid = append(paid, time.Now())
 		} else {
 			paid = append(paid, time.Unix(0, 0))

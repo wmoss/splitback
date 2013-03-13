@@ -20,6 +20,9 @@
                 <input type="text" id="amount" name="Amount" class="input-small" placeholder="Amount" ng-model="amount" ng-change="adjust()">
               </div>
               <div class="input-prepend" style="padding-right: 10px" ng-repeat="user in recipients">
+                <button type="button" class="btn &#123;{getButtonClass(user.paid)}} btn-mini" style="width: 50px; height: 20px" ng-model="user.paid" ng-click="togglePaid(user)">
+                  &#123;{getButtonText(user.paid)}}
+                </button>
                 <input type="text" autocomplete="off" class="name" ng-model="user.name" ng-change="checkMore()" bs-typeahead="findUser" placeholder="...">
                 <input type="text" class="input-mini amount" ng-model="user.amount" readonly>
               </div>
