@@ -167,9 +167,9 @@ func bill(w http.ResponseWriter, r *http.Request) {
 	}
 
 	receivers := make([]*datastore.Key, 0)
-	amounts := []float32{float32(recipients[0]["amount"].(float64))}
-	paid := []time.Time{time.Now()}
-	for _, recipient := range recipients[1:] {
+	amounts := make([]float32, 0)
+	paid := make([]time.Time, 0)
+	for i, recipient := range recipients {
 		if recipient["name"] == "" {
 			continue
 		}
@@ -177,7 +177,11 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		_, key := getUserBy(c, "Name", recipient["name"].(string))
 		receivers = append(receivers, key)
 		amounts = append(amounts, float32(recipient["amount"].(float64)))
-		paid = append(paid, time.Unix(0, 0))
+		if i == 0 {
+			paid = append(paid, time.Now())
+		} else {
+			paid = append(paid, time.Unix(0, 0))
+		}
 	}
 
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
@@ -297,8 +301,8 @@ func buildOwed(c appengine.Context) string {
 		tc := map[string]interface{}{
 			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
 			"Receivers": receivers,
-			"Amounts":   bill.Amounts[1:],
-			"Paid":      getPaid(bill.DatePaid[1:]),
+			"Amounts":   bill.Amounts,
+			"Paid":      getPaid(bill.DatePaid),
 			"Key":       key.Encode(),
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
@@ -327,6 +331,9 @@ func buildOwe(c appengine.Context) string {
 		if err != nil {
 			panic(err)
 		}
+		if bill.Sender.Equal(key) {
+			continue
+		}
 
 		var sender User
 		err = datastore.Get(c, bill.Sender, &sender)
@@ -334,11 +341,12 @@ func buildOwe(c appengine.Context) string {
 			panic(err)
 		}
 
+		index := findInBill(&bill, key)
 		tc := map[string]interface{}{
 			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
 			"Receivers": []User{sender},
-			"Amounts":   bill.Amounts[1:],
-			"Paid":      getPaid(bill.DatePaid[1:]),
+			"Amounts":   []float32{bill.Amounts[index]},
+			"Paid":      getPaid([]time.Time{bill.DatePaid[index]}),
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
 			panic(err)
@@ -396,6 +404,9 @@ func buildBills(c appengine.Context) string {
 		if err != nil {
 			panic(err)
 		}
+		if bill.Sender.Equal(key) {
+			continue
+		}
 
 		index := findInBill(&bill, key)
 
@@ -419,11 +430,10 @@ func buildBills(c appengine.Context) string {
 	return out.String()
 }
 
-func findInBill(bill *Bill, key *datastore.Key) (index int) {
+func findInBill(bill *Bill, key *datastore.Key) int {
 	for i, v := range bill.Receivers {
 		if v.Equal(key) {
-			index = i + 1
-			return
+			return i
 		}
 	}
 
