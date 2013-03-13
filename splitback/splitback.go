@@ -128,7 +128,7 @@ type Bill struct {
 	Receivers []*datastore.Key
 	Amounts   []float32
 	DatePaid  []time.Time
-	Timestamp float64
+	Timestamp time.Time
 }
 
 func getUserBy(c appengine.Context, by string, value string) (user *User, key *datastore.Key) {
@@ -150,10 +150,6 @@ func getUserBy(c appengine.Context, by string, value string) (user *User, key *d
 	}
 
 	return
-}
-
-func nowf() float64 {
-	return float64(time.Now().UnixNano()) / float64(time.Second)
 }
 
 func bill(w http.ResponseWriter, r *http.Request) {
@@ -190,7 +186,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		Receivers: receivers,
 		Amounts:   amounts,
 		DatePaid:  paid,
-		Timestamp: nowf(),
+		Timestamp: time.Now(),
 	}
 
 	if _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "Bills", nil), &bill); err != nil {
@@ -299,7 +295,7 @@ func buildOwed(c appengine.Context) string {
 		}
 
 		tc := map[string]interface{}{
-			"Timestamp": time.Unix(int64(bill.Timestamp), 0).Format("Mon, Jan 02 2006 15:04:05 MST"),
+			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
 			"Receivers": receivers,
 			"Amounts":   bill.Amounts[1:],
 			"Paid":      getPaid(bill.DatePaid[1:]),
@@ -339,7 +335,7 @@ func buildOwe(c appengine.Context) string {
 		}
 
 		tc := map[string]interface{}{
-			"Timestamp": time.Unix(int64(bill.Timestamp), 0).Format("Mon, Jan 02 2006 15:04:05 MST"),
+			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
 			"Receivers": []User{sender},
 			"Amounts":   bill.Amounts[1:],
 			"Paid":      getPaid(bill.DatePaid[1:]),
