@@ -11,7 +11,7 @@
       {{else}}
         <span class="label label-important">Unpaid</span>
       {{end}}
-      {{$element.Name}} : ${{index $.Amounts $index}}
+      {{$element.Name}} : ${{index $.Amounts $index | printf "%.2f" }}
     </div>
   {{end}}
 

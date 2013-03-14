@@ -372,7 +372,7 @@ func buildPayRow(c appengine.Context, previous *Bill, amount float32, bills stri
 	tc := map[string]interface{}{
 		"Recipient": previous.Sender.Encode(),
 		"Name":      sender.Name,
-		"Amount":    amount,
+		"Amount":    fmt.Sprintf("%.2f", amount),
 		"Bills":     bills,
 	}
 	if err := tmpl.Execute(out, tc); err != nil {

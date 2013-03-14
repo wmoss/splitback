@@ -6,6 +6,7 @@ import (
 	"appengine/urlfetch"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"text/template"
@@ -43,7 +44,7 @@ func getPayUrl(c appengine.Context, sender *datastore.Key, recipient *datastore.
 		"Sender":         sender.Encode(),
 		"Bills":          bills,
 		"RecipientEmail": user.Email,
-		"Amount":         amount,
+		"Amount":         fmt.Sprintf("%.2f", amount),
 	}
 	var data bytes.Buffer
 	tmpl.Execute(&data, tc)
