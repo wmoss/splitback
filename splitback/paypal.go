@@ -72,6 +72,7 @@ func getPayUrl(c appengine.Context, sender *datastore.Key, recipient *datastore.
 	res := res_["responseEnvelope"].(map[string]interface{})
 
 	if res["ack"].(string) != "Success" {
+		c.Warningf("Paypal Failure: %v", res_)
 		panic("Failure")
 	}
 
