@@ -11,7 +11,7 @@ import (
 	"text/template"
 )
 
-const payURL = "https://svcs.sandbox.paypal.com/AdaptivePayments/Pay"
+const payURL = "https://svcs.paypal.com/AdaptivePayments/Pay"
 
 const payTmpl = `{
   "actionType":"PAY",
@@ -53,10 +53,9 @@ func getPayUrl(c appengine.Context, sender *datastore.Key, recipient *datastore.
 	req.Header.Add("X-PAYPAL-SECURITY-USERID", config.User)
 	req.Header.Add("X-PAYPAL-SECURITY-PASSWORD", config.Password)
 	req.Header.Add("X-PAYPAL-SECURITY-SIGNATURE", config.Signature)
-	//req.Header.Add("X-PAYPAL-DEVICE-IPADDRESS", "168.212.226.204")
 	req.Header.Add("X-PAYPAL-REQUEST-DATA-FORMAT", "JSON")
 	req.Header.Add("X-PAYPAL-RESPONSE-DATA-FORMAT", "JSON")
-	req.Header.Add("X-PAYPAL-APPLICATION-ID", "APP-80W284485P519543T")
+	req.Header.Add("X-PAYPAL-APPLICATION-ID", config.AppId)
 
 	client := urlfetch.Client(c)
 	resp, err := client.Do(req)
@@ -75,5 +74,5 @@ func getPayUrl(c appengine.Context, sender *datastore.Key, recipient *datastore.
 		panic("Failure")
 	}
 
-	return "https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_ap-payment&paykey=" + res_["payKey"].(string)
+	return "https://www.paypal.com/webscr?cmd=_ap-payment&paykey=" + res_["payKey"].(string)
 }

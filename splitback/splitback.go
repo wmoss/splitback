@@ -19,6 +19,7 @@ type Config struct {
 	User      string
 	Password  string
 	Signature string
+	AppId     string
 }
 
 var config Config = Config{}
