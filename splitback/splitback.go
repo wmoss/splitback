@@ -57,8 +57,8 @@ func requireLogin(c appengine.Context, w http.ResponseWriter, r *http.Request) b
 }
 
 type User struct {
-	Name      string
-	Email     string
+	Name  string
+	Email string
 }
 
 func signup(w http.ResponseWriter, r *http.Request) {
@@ -69,8 +69,8 @@ func signup(w http.ResponseWriter, r *http.Request) {
 
 	current := user.Current(c)
 	u := User{
-		Name:      r.FormValue("name"),
-		Email:     current.Email,
+		Name:  r.FormValue("name"),
+		Email: current.Email,
 	}
 	if _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "Users", nil), &u); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
