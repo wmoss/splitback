@@ -131,6 +131,7 @@ type Bill struct {
 	Amounts   []float32
 	DatePaid  []time.Time
 	Timestamp time.Time
+	Note      string
 }
 
 func getUserBy(c appengine.Context, by string, value string) (user *User, key *datastore.Key) {
@@ -160,15 +161,16 @@ func bill(w http.ResponseWriter, r *http.Request) {
 	tmpl, _ := template.ParseFiles("templates/new-bill.email")
 
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	raw, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		panic(err)
 	}
 
-	recipients := make([]map[string]interface{}, 0)
-	if err := json.Unmarshal(body, &recipients); err != nil {
+	body := make(map[string]interface{}, 0)
+	if err := json.Unmarshal(raw, &body); err != nil {
 		panic(err)
 	}
+	recipients := body["recipients"].([]interface{})
 
 	sender, sender_key := getUserBy(c, "Email", user.Current(c).Email)
 
@@ -176,6 +178,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 	amounts := make([]float32, 0)
 	paid := make([]time.Time, 0)
 	for _, recipient := range recipients {
+		recipient := recipient.(map[string]interface{})
 		if recipient["name"] == "" {
 			continue
 		}
@@ -219,6 +222,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		Amounts:   amounts,
 		DatePaid:  paid,
 		Timestamp: time.Now(),
+		Note: body["note"].(string),
 	}
 
 	if _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "Bills", nil), &bill); err != nil {
@@ -332,6 +336,7 @@ func buildOwed(c appengine.Context) string {
 			"Amounts":   bill.Amounts,
 			"Paid":      getPaid(bill.DatePaid),
 			"Key":       key.Encode(),
+			"Note":  bill.Note,
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
 			panic(err)
@@ -375,6 +380,7 @@ func buildOwe(c appengine.Context) string {
 			"Receivers": []User{sender},
 			"Amounts":   []float32{bill.Amounts[index]},
 			"Paid":      getPaid([]time.Time{bill.DatePaid[index]}),
+			"Note":  bill.Note,
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
 			panic(err)

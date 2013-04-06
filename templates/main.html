@@ -19,6 +19,9 @@
               <div>
                 <input type="text" id="amount" name="Amount" class="input-small" placeholder="Amount" ng-model="amount" ng-change="adjust()">
               </div>
+              <div>
+                <input type="text" placeholder="Notes" ng-model="note">
+              </div>
               <div class="input-prepend" style="padding-right: 10px" ng-repeat="user in recipients">
                 <button type="button" class="btn &#123;{getButtonClass(user.paid)}} btn-mini" style="width: 50px; height: 20px" ng-model="user.paid" ng-click="togglePaid(user)">
                   &#123;{getButtonText(user.paid)}}
@@ -56,6 +59,7 @@
             <table id="owed" class="table table-striped">
               {{if .Owed}}
                 <div class="row span3"><strong>Date</strong></div>
+                <div class="row span3"><strong>Notes</strong></div>
                 <div class="row span3"><strong>Debts</strong></div>
                 {{.Owed}}
               {{else}}
@@ -70,6 +74,7 @@
             <table id="owe" class="table table-striped">
               {{if .Owe}}
                 <div class="row span3"><strong>Date</strong></div>
+                <div class="row span3"><strong>Notes</strong></div>
                 <div class="row span3"><strong>Debts</strong></div>
                 {{.Owe}}
               {{else}}

@@ -50,8 +50,8 @@ app.controller("NewBillCtrl", function($scope) {
         $.ajax({
             type: "POST",
             url: "/bill",
-            data: JSON.stringify($scope.recipients),
-
+            data: JSON.stringify({"note": $scope.note,
+                                  "recipients": $scope.recipients}),
             success: function(data, status) {
                 $("#owed").html(data);
             }

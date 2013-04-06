@@ -4,6 +4,10 @@
     {{.Timestamp}}
   </div>
 
+  <div class="row span3">
+    {{.Note}}
+  </div>
+
   {{range $index, $element := .Receivers}}
     <div class="row span3">
       {{if index $.Paid $index}}
