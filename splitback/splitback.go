@@ -3,6 +3,7 @@ package splitback
 import (
 	"appengine"
 	"appengine/datastore"
+	"appengine/mail"
 	"appengine/user"
 	"bytes"
 	"encoding/json"
@@ -156,6 +157,8 @@ func getUserBy(c appengine.Context, by string, value string) (user *User, key *d
 func bill(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
+	tmpl, _ := template.ParseFiles("templates/new-bill.email")
+
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -167,6 +170,8 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	sender, sender_key := getUserBy(c, "Email", user.Current(c).Email)
+
 	receivers := make([]*datastore.Key, 0)
 	amounts := make([]float32, 0)
 	paid := make([]time.Time, 0)
@@ -175,19 +180,41 @@ func bill(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		_, key := getUserBy(c, "Name", recipient["name"].(string))
+		user, key := getUserBy(c, "Name", recipient["name"].(string))
 		receivers = append(receivers, key)
-		amounts = append(amounts, float32(recipient["amount"].(float64)))
+		amount := recipient["amount"].(float64)
+		amounts = append(amounts, float32(amount))
 		if recipient["paid"].(bool) {
 			paid = append(paid, time.Now())
 		} else {
 			paid = append(paid, time.Unix(0, 0))
 		}
+
+		if !key.Equal(sender_key) {
+			out := bytes.NewBuffer(nil)
+
+			tc := map[string]interface{}{
+				"Recipient": user.Name,
+				"Sender":    sender.Name,
+				"Amount":    strconv.FormatFloat(amount, 'f', 2, 32),
+			}
+			if err := tmpl.Execute(out, tc); err != nil {
+				panic(err)
+			}
+			msg := &mail.Message{
+				Sender:  "Splitback <splitbackapp@gmail.com>",
+				To:      []string{user.Email},
+				Subject: "You have a new bill from " + sender.Name,
+				Body:    out.String(),
+			}
+			if err := mail.Send(c, msg); err != nil {
+				c.Errorf("Couldn't send email: %v", err)
+			}
+		}
 	}
 
-	_, key := getUserBy(c, "Email", user.Current(c).Email)
 	bill := Bill{
-		Sender:    key,
+		Sender:    sender_key,
 		Receivers: receivers,
 		Amounts:   amounts,
 		DatePaid:  paid,
