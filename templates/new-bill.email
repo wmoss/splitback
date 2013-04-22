@@ -1,6 +1,8 @@
 Hi {{.Recipient}},
 
-You have a new bill from {{.Sender}} in the amount of {{.Amount}}.
+You have a new bill from {{.Sender}} for ${{.Amount}}.
+
+http://split-back.appspot.com
 
 Thanks,
 Splitback
