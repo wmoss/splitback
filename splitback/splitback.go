@@ -454,8 +454,10 @@ func buildBills(c appengine.Context) string {
 
 		index := findInBill(&bill, key)
 
-		if bill.DatePaid[index].After(time.Unix(0, 0)) {
-			weeklyAmount += bill.Amounts[index]
+		if datePaid := bill.DatePaid[index]; datePaid.After(time.Unix(0, 0)) {
+			if datePaid.After(oneWeekAgo) {
+				weeklyAmount += bill.Amounts[index]
+			}
 			continue
 		}
 
