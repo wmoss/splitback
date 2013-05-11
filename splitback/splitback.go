@@ -252,7 +252,9 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		Amounts:   amounts,
 		DatePaid:  paid,
 		Timestamp: time.Now(),
-		Note:      body["note"].(string),
+	}
+	if note, ok := body["note"].(string); ok {
+		bill.Note = note
 	}
 
 	if _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "Bills", nil), &bill); err != nil {
