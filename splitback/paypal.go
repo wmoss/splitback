@@ -20,16 +20,16 @@ const payTmpl = `{
       "email":"{{.EmailPrefix}}{{.RecipientEmail}}"}]
   },
 
-  "returnUrl":"{{.AppUrl}}/payed?Sender={{.Sender}}&Bills={{.Bills}}",
+  "returnUrl":"{{.AppUrl}}/paySucceeded?Sender={{.Sender}}&Bills={{.Bills}}",
 
-  "cancelUrl": "{{.AppUrl}}/?payfailed",
+  "cancelUrl": "{{.AppUrl}}/payFailed",
   "requestEnvelope":{
     "errorLanguage":"en_US",
     "detailLevel":"ReturnAll"
   }
 }`
 
-func getPayUrl(c appengine.Context, sender *datastore.Key, recipient *datastore.Key, bills string, amount float32) string {
+func getPayKey(c appengine.Context, sender *datastore.Key, recipient *datastore.Key, bills string, amount float32) string {
 	var user User
 	err := datastore.Get(c, recipient, &user)
 
@@ -50,6 +50,9 @@ func getPayUrl(c appengine.Context, sender *datastore.Key, recipient *datastore.
 	tmpl.Execute(&data, tc)
 
 	req, err := http.NewRequest("POST", config.PayKeyUrl, &data)
+	if err != nil {
+		panic(err)
+	}
 
 	req.Header.Add("X-PAYPAL-SECURITY-USERID", config.User)
 	req.Header.Add("X-PAYPAL-SECURITY-PASSWORD", config.Password)
@@ -76,5 +79,5 @@ func getPayUrl(c appengine.Context, sender *datastore.Key, recipient *datastore.
 		panic("Failure")
 	}
 
-	return "https://www.paypal.com/webscr?cmd=_ap-payment&paykey=" + res_["payKey"].(string)
+	return res_["payKey"].(string)
 }

@@ -24,6 +24,7 @@ type Config struct {
 	AppId       string
 	AppUrl      string
 	PayKeyUrl   string
+	PayFormUrl  string
 	EmailPrefix string
 }
 
@@ -35,8 +36,8 @@ func init() {
 	http.HandleFunc("/finduser", findUser)
 	http.HandleFunc("/bill", bill)
 	http.HandleFunc("/remove", remove)
-	http.HandleFunc("/pay", pay)
-	http.HandleFunc("/payed", payed)
+	http.HandleFunc("/paySucceeded", paySucceeded)
+	http.HandleFunc("/payFailed", payFailed)
 	http.HandleFunc("/", main)
 
 	env = getEnv()
@@ -286,20 +287,18 @@ func remove(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, buildOwed(c))
 }
 
-func pay(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
+func payFailed(w http.ResponseWriter, r *http.Request) {
+	tmpl, _ := template.ParseFiles("templates/paypal-redirect.html")
 
-	recipient, _ := datastore.DecodeKey(r.FormValue("Recipient"))
-	amount, _ := strconv.ParseFloat(r.FormValue("Amount"), 32)
-
-	_, sender := getUserBy(c, "Email", user.Current(c).Email)
-
-	url := getPayUrl(c, sender, recipient, r.FormValue("Bills"), float32(amount))
-
-	http.Redirect(w, r, url, http.StatusFound)
+	tc := map[string]interface{}{
+		"CallbackFunction": "paymentFailed",
+	}
+	if err := tmpl.Execute(w, tc); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
-func payed(w http.ResponseWriter, r *http.Request) {
+func paySucceeded(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
 	sender, _ := datastore.DecodeKey(r.FormValue("Sender"))
@@ -327,7 +326,14 @@ func payed(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	http.Redirect(w, r, "/", http.StatusFound)
+	tmpl, _ := template.ParseFiles("templates/paypal-redirect.html")
+
+	tc := map[string]interface{}{
+		"CallbackFunction": "paymentSucceeded",
+	}
+	if err := tmpl.Execute(w, tc); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func buildOwed(c appengine.Context) string {
@@ -431,11 +437,15 @@ func buildPayRow(c appengine.Context, previous *Bill, amount float32, bills stri
 		panic(err)
 	}
 
+	_, user := getUserBy(c, "Email", user.Current(c).Email)
+
+	payKey := getPayKey(c, user, previous.Sender, bills, amount)
+
 	tc := map[string]interface{}{
-		"Recipient": previous.Sender.Encode(),
-		"Name":      sender.Name,
-		"Amount":    fmt.Sprintf("%.2f", amount),
-		"Bills":     bills,
+		"Name":       sender.Name,
+		"Amount":     fmt.Sprintf("%.2f", amount),
+		"PayKey":     payKey,
+		"PayFormUrl": config.PayFormUrl,
 	}
 	if err := tmpl.Execute(out, tc); err != nil {
 		panic(err)

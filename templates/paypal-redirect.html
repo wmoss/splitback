@@ -1,0 +1,12 @@
+<html>
+  <script type="text/javascript" charset="utf-8">
+      if (top && top.opener && top.opener.top) {
+        top.opener.top.{{.CallbackFunction}}();
+        window.close();
+      } else if (top.{{.CallbackFunction}}) {
+        top.{{.CallbackFunction}}();
+      } else {
+        alert('Please close the window and reload to continue');
+      }
+  </script>
+</html>

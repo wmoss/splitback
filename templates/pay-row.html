@@ -1,9 +1,9 @@
 <div class="row">
-  <form class=".form-inline" action="/pay" method="post">
-    <input type="hidden" name="Recipient" value="{{.Recipient}}">
-    <input type="hidden" name="Bills" value="{{.Bills}}">
-    <input type="hidden" name="Amount" value="{{.Amount}}">
+  <form action="{{.PayFormUrl}}" target="PPDGFrame" class="standard .form-inline">
+    <input id="type" type="hidden" name="expType" value="light">
+    <input id="paykey" type="hidden" name="paykey" value="{{.PayKey}}">
+
     {{.Name}} : ${{.Amount}}
-    <button type="submit" class="btn">Pay</button>
+    <button type="submit" class="btn pay">Pay</button>
   </form>
 </div>

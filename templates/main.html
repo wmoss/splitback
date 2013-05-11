@@ -43,11 +43,13 @@
               </div>
             </div>
 
-            {{if .Bills}}
-              {{.Bills}}
-            {{else}}
-              <p class="text-center">You have no bills to settle.</p>
-            {{end}}
+            <div id="bill-list">
+              {{if .Bills}}
+                {{.Bills}}
+              {{else}}
+                <p class="text-center">You have no bills to settle.</p>
+              {{end}}
+            </div>
           </div>
 
         </div>
@@ -94,17 +96,34 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.0/bootstrap.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/angular-strap/0.6.6/angular-strap.min.js"></script>
 
+    <script src="//www.paypalobjects.com/js/external/dg.js"></script>
+
     <script src="/static/js/new-bill.js"></script>
     <script src="/static/js/ajax-form.js"></script>
 
     <script type="text/javascript">
       var name = "{{.Name}}";
+      var currentPaypalFlow;
+
+      function paymentFailed() {
+        currentPaypalFlow.closeFlow();
+        $("#pay-failed").show();
+      }
+
+      function paymentSucceeded() {
+        $("#bill-list").html('<p class="text-center">You have no bills to settle.</p>');
+        currentPaypalFlow.closeFlow();
+      }
 
       $(document).ready(function() {
-        if (window.location.search.search("payfailed") > -1) {
-          window.history.replaceState("main", window.document.title, "/");
-          $("#pay-failed").show();
-      }
+        $(".pay").each(function(index) {
+          var id = "pay-button-" + index;
+          $(this).attr("id", id);
+          var flow = new PAYPAL.apps.DGFlow({trigger : id});
+          $(this).click(function() {
+            currentPaypalFlow = flow;
+          });
+        });
       });
 
       {{if .New}}
