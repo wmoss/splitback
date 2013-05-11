@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"text/template"
@@ -17,13 +18,17 @@ import (
 )
 
 type Config struct {
-	User      string
-	Password  string
-	Signature string
-	AppId     string
+	User        string
+	Password    string
+	Signature   string
+	AppId       string
+	AppUrl      string
+	PayKeyUrl   string
+	EmailPrefix string
 }
 
 var config Config = Config{}
+var env map[string]string
 
 func init() {
 	http.HandleFunc("/signup", signup)
@@ -34,13 +39,37 @@ func init() {
 	http.HandleFunc("/payed", payed)
 	http.HandleFunc("/", main)
 
-	raw, err := ioutil.ReadFile("priv/paypal.json")
+	env = getEnv()
+
+	var configFile = "priv/paypal.json"
+	if strings.Contains(env["SERVER_SOFTWARE"], "Development") {
+		configFile = "priv/sandbox.json"
+	}
+
+	raw, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		panic(err)
 	}
 	if err := json.Unmarshal(raw, &config); err != nil {
 		panic(err)
 	}
+}
+
+func getEnv() (env map[string]string) {
+	env = make(map[string]string)
+
+	vals := os.Environ()
+	for _, v := range vals {
+		kv := strings.SplitN(v, "=", 2)
+		switch len(kv) {
+		case 1:
+			env[v] = ""
+		case 2:
+			env[kv[0]] = kv[1]
+		}
+	}
+
+	return
 }
 
 func requireLogin(c appengine.Context, w http.ResponseWriter, r *http.Request) bool {

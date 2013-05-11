@@ -12,19 +12,17 @@ import (
 	"text/template"
 )
 
-const payURL = "https://svcs.paypal.com/AdaptivePayments/Pay"
-
 const payTmpl = `{
   "actionType":"PAY",
   "currencyCode":"USD",
   "receiverList":{"receiver":[{
       "amount":"{{.Amount}}",
-      "email":"{{.RecipientEmail}}"}]
+      "email":"{{.EmailPrefix}}{{.RecipientEmail}}"}]
   },
 
-  "returnUrl":"https://split-back.appspot.com/payed?Sender={{.Sender}}&Bills={{.Bills}}",
+  "returnUrl":"{{.AppUrl}}/payed?Sender={{.Sender}}&Bills={{.Bills}}",
 
-  "cancelUrl":"https://split-back.appspot.com/?payfailed",
+  "cancelUrl": "{{.AppUrl}}/?payfailed",
   "requestEnvelope":{
     "errorLanguage":"en_US",
     "detailLevel":"ReturnAll"
@@ -45,11 +43,13 @@ func getPayUrl(c appengine.Context, sender *datastore.Key, recipient *datastore.
 		"Bills":          bills,
 		"RecipientEmail": user.Email,
 		"Amount":         fmt.Sprintf("%.2f", amount),
+		"AppUrl":         config.AppUrl,
+		"EmailPrefix":    config.EmailPrefix,
 	}
 	var data bytes.Buffer
 	tmpl.Execute(&data, tc)
 
-	req, err := http.NewRequest("POST", payURL, &data)
+	req, err := http.NewRequest("POST", config.PayKeyUrl, &data)
 
 	req.Header.Add("X-PAYPAL-SECURITY-USERID", config.User)
 	req.Header.Add("X-PAYPAL-SECURITY-PASSWORD", config.Password)
