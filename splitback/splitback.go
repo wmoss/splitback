@@ -251,7 +251,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		Amounts:   amounts,
 		DatePaid:  paid,
 		Timestamp: time.Now(),
-		Note: body["note"].(string),
+		Note:      body["note"].(string),
 	}
 
 	if _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "Bills", nil), &bill); err != nil {
@@ -365,7 +365,7 @@ func buildOwed(c appengine.Context) string {
 			"Amounts":   bill.Amounts,
 			"Paid":      getPaid(bill.DatePaid),
 			"Key":       key.Encode(),
-			"Note":  bill.Note,
+			"Note":      bill.Note,
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
 			panic(err)
@@ -409,7 +409,7 @@ func buildOwe(c appengine.Context) string {
 			"Receivers": []User{sender},
 			"Amounts":   []float32{bill.Amounts[index]},
 			"Paid":      getPaid([]time.Time{bill.DatePaid[index]}),
-			"Note":  bill.Note,
+			"Note":      bill.Note,
 		}
 		if err := tmpl.Execute(out, tc); err != nil {
 			panic(err)
