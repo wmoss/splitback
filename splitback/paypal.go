@@ -17,7 +17,9 @@ const payTmpl = `{
   "currencyCode":"USD",
   "receiverList":{"receiver":[{
       "amount":"{{.Amount}}",
-      "email":"{{.EmailPrefix}}{{.RecipientEmail}}"}]
+      "email":"{{.EmailPrefix}}{{.RecipientEmail}}",
+      "paymentType":"PERSONAL"
+    }]
   },
 
   "returnUrl":"{{.AppUrl}}/paySucceeded?Sender={{.Sender}}&Bills={{.Bills}}",
