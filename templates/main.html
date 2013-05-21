@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+
 <html>
   <head>
     <title>SplitBack</title>
@@ -60,9 +62,12 @@
 
             <table id="owed" class="table table-striped">
               {{if .Owed}}
-                <div class="row span3"><strong>Date</strong></div>
-                <div class="row span3"><strong>Notes</strong></div>
-                <div class="row span3"><strong>Debts</strong></div>
+                <tr>
+                  <th class="span4">Date</th>
+                  <th class="span4">Notes</th>
+                  <th class="span7">Debts</th>
+                  <th class="span1"></th>
+                </tr>
                 {{.Owed}}
               {{else}}
                 <tr><td style="text-align: center">Nobody owes you anything!</td></tr>
@@ -75,9 +80,11 @@
 
             <table id="owe" class="table table-striped">
               {{if .Owe}}
-                <div class="row span3"><strong>Date</strong></div>
-                <div class="row span3"><strong>Notes</strong></div>
-                <div class="row span3"><strong>Debts</strong></div>
+                <tr>
+                  <th class="span4">Date</th>
+                  <th class="span4">Notes</th>
+                  <th class="span8">Debts</th>
+                </tr>
                 {{.Owe}}
               {{else}}
                 <tr><td style="text-align: center">You don't owe anybody anything!</td></tr>

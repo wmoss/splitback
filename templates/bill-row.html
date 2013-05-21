@@ -1,15 +1,16 @@
-<tr><td>
+<tr>
 
-  <div class="row span3">
+  <td>
     {{.Timestamp}}
-  </div>
+  </td>
 
-  <div class="row span3">
+  <td>
     {{.Note}}
-  </div>
+  </td>
 
+  <td>
   {{range $index, $element := .Receivers}}
-    <div class="row span3">
+    <div class="span4">
       {{if index $.Paid $index}}
         <span class="label label-success">Paid</span>
       {{else}}
@@ -18,14 +19,15 @@
       {{$element.Name}} : ${{index $.Amounts $index | printf "%.2f" }}
     </div>
   {{end}}
+  </td>
 
   {{if .Key}}
-    <div class=".pull-right">
+    <td>
       <form data-async data-target="#owed" action="/remove" method="post">
         <input type="hidden" name="key" value="{{.Key}}"></input>
         <button type="submit" class="close remove-bill">&times;</button>
       </form>
-    </div>
+    </td>
   {{end}}
 
-</td></tr>
+</tr>
