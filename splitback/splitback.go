@@ -38,7 +38,9 @@ func init() {
 	http.HandleFunc("/remove", remove)
 	http.HandleFunc("/paySucceeded", paySucceeded)
 	http.HandleFunc("/payFailed", payFailed)
+	http.HandleFunc("/rest/name", name)
 	http.HandleFunc("/", main)
+
 
 	env = getEnv()
 
@@ -138,6 +140,25 @@ func main(w http.ResponseWriter, r *http.Request) {
 	}
 
 	return
+}
+
+func name(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	if requireLogin(c, w, r) {
+		return
+	}
+
+	user, _ := getUserBy(c, "Email", user.Current(c).Email)
+
+	result := make(map[string]interface{})
+	if user == nil {
+		result["name"] = nil
+	} else {
+		result["name"] = user.Name
+	}
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(result)
 }
 
 func findUser(w http.ResponseWriter, r *http.Request) {
