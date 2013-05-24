@@ -39,6 +39,7 @@ func init() {
 	http.HandleFunc("/paySucceeded", paySucceeded)
 	http.HandleFunc("/payFailed", payFailed)
 	http.HandleFunc("/rest/name", name)
+	http.HandleFunc("/rest/owed", owed)
 	http.HandleFunc("/", main)
 
 
@@ -402,6 +403,55 @@ func buildOwed(c appengine.Context) string {
 	}
 
 	return out.String()
+}
+
+func owed(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	_, key := getUserBy(c, "Email", user.Current(c).Email)
+
+	q := datastore.NewQuery("Bills").
+		Filter("Sender =", key)
+
+	resp := make([]map[string]interface{}, 0)
+	for t := q.Run(c); ; {
+		var bill Bill
+		key, err := t.Next(&bill)
+		if err == datastore.Done {
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+
+		receivers := make([]User, len(bill.Receivers))
+		err = datastore.GetMulti(c, bill.Receivers, receivers)
+		if err != nil {
+			panic(err)
+		}
+
+		paid := getPaid(bill.DatePaid)
+
+		respReceivers := make([]map[string]interface{}, len(receivers))
+		for i, receiver := range receivers {
+			respReceivers[i] = map[string]interface{}{
+				"Name": receiver.Name,
+				"Amount": bill.Amounts[i],
+				"Paid": paid[i],
+			}
+		}
+
+		resp = append(resp,
+			map[string]interface{}{
+			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
+			"Receivers": respReceivers,
+			"Note":      bill.Note,
+			"Key":       key.Encode(),
+		})
+	}
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(resp)
 }
 
 func buildOwe(c appengine.Context) string {

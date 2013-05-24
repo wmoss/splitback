@@ -8,12 +8,17 @@ import 'package:web_ui/web_ui.dart';
 @observable
 String userName = '';
 
+List<Map<String, Object>> owed = toObservable(new List());
+
 void main() {
   // Enable this to use Shadow DOM in the browser.
   //useShadowDom = true;
 
   HttpRequest.getString('rest/name')
   .then(updateName);
+
+  HttpRequest.getString('rest/owed')
+  .then((resp) => owed.addAll(json.parse(resp)));
 }
 
 void updateName(String resp) {
