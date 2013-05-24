@@ -31,3 +31,10 @@ void updateName(String resp) {
     userName = name['name'];
   }
 }
+
+void removeBill(String key) {
+  var data = json.stringify({'key': key});
+  HttpRequest.request('rest/remove', method: 'POST', sendData: data)
+  .then((_) => owed.removeWhere((bill) => bill["Key"] == key));
+  //We should handle the error case
+}

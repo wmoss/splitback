@@ -35,7 +35,7 @@ func init() {
 	http.HandleFunc("/rest/signup", signup)
 	http.HandleFunc("/finduser", findUser)
 	http.HandleFunc("/bill", bill)
-	http.HandleFunc("/remove", remove)
+	http.HandleFunc("/rest/remove", remove)
 	http.HandleFunc("/paySucceeded", paySucceeded)
 	http.HandleFunc("/payFailed", payFailed)
 	http.HandleFunc("/rest/name", name)
@@ -290,7 +290,18 @@ func bill(w http.ResponseWriter, r *http.Request) {
 func remove(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
-	key, err := datastore.DecodeKey(r.FormValue("key"))
+	defer r.Body.Close()
+	raw, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	body := make(map[string]interface{}, 0)
+	if err := json.Unmarshal(raw, &body); err != nil {
+		panic(err)
+	}
+
+	key, err := datastore.DecodeKey(body["key"].(string))
 	if err != nil {
 		panic(err)
 	}
@@ -307,8 +318,6 @@ func remove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	datastore.Delete(c, key)
-
-	fmt.Fprint(w, buildOwed(c))
 }
 
 func payFailed(w http.ResponseWriter, r *http.Request) {
