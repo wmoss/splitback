@@ -32,7 +32,7 @@ var config Config = Config{}
 var env map[string]string
 
 func init() {
-	http.HandleFunc("/signup", signup)
+	http.HandleFunc("/rest/signup", signup)
 	http.HandleFunc("/finduser", findUser)
 	http.HandleFunc("/bill", bill)
 	http.HandleFunc("/remove", remove)
