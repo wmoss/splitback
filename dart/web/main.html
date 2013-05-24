@@ -51,7 +51,6 @@
             <legend>Owed To Me</legend>
 
             <table id="owed" class="table table-striped">
-
                 <tbody template instantiate="if owed.isEmpty">
                   <tr>
                     <td style="text-align: center">Nobody owes you anything!</td>
@@ -97,7 +96,40 @@
             <legend>You Owe</legend>
 
             <table id="owe" class="table table-striped">
-                <tr><td style="text-align: center">You don't owe anybody anything!</td></tr>
+              <tbody template instantiate="if owe.isEmpty">
+                <tr>
+                  <td style="text-align: center">You don't owe anybody anything!</td>
+                </tr>
+              </tbody>
+
+              <thead template instantiate="if !owe.isEmpty">
+                <tr>
+                  <th class="span4">Date</th>
+                  <th class="span4">Notes</th>
+                  <th class="span7">Debts</th>
+                </tr>
+              </thead>
+
+              <tbody template iterate="bill in owe">
+                <tr>
+                  <td>
+                    {{bill['Timestamp']}}
+                  </td>
+
+                  <td>
+                    {{bill['Note']}}
+                  </td>
+
+                  <td>
+                    <div>
+                      <span template instantiate="if bill['Paid']" class="label label-success">Paid</span>
+                      <span template instantiate="if !bill['Paid']" class="label label-important">Unpaid</span>
+                      {{bill['Sender']}} : ${{bill['Amount'].toStringAsFixed(2)}}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+
             </table>
           </div>
 

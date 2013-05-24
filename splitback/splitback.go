@@ -40,6 +40,7 @@ func init() {
 	http.HandleFunc("/payFailed", payFailed)
 	http.HandleFunc("/rest/name", name)
 	http.HandleFunc("/rest/owed", owed)
+	http.HandleFunc("/rest/owe", owe)
 	http.HandleFunc("/", main)
 
 
@@ -456,6 +457,49 @@ func owed(w http.ResponseWriter, r *http.Request) {
 			"Receivers": respReceivers,
 			"Note":      bill.Note,
 			"Key":       key.Encode(),
+		})
+	}
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(resp)
+}
+
+func owe(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	_, key := getUserBy(c, "Email", user.Current(c).Email)
+
+	q := datastore.NewQuery("Bills").
+		Filter("Receivers =", key)
+
+	resp := make([]map[string]interface{}, 0)
+	for t := q.Run(c); ; {
+		var bill Bill
+		_, err := t.Next(&bill)
+		if err == datastore.Done {
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+		if bill.Sender.Equal(key) {
+			continue
+		}
+
+		var sender User
+		err = datastore.Get(c, bill.Sender, &sender)
+		if err != nil {
+			panic(err)
+		}
+
+		index := findInBill(&bill, key)
+		resp = append(resp,
+			map[string]interface{}{
+			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
+			"Sender":    sender.Name,
+			"Amount":    bill.Amounts[index],
+			"Paid":      getPaid([]time.Time{bill.DatePaid[index]})[0],
+			"Note":      bill.Note,
 		})
 	}
 

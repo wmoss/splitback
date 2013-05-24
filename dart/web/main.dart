@@ -10,6 +10,8 @@ String userName = '';
 
 List<Map<String, Object>> owed = toObservable(new List());
 
+List<Map<String, Object>> owe = toObservable(new List());
+
 void main() {
   // Enable this to use Shadow DOM in the browser.
   //useShadowDom = true;
@@ -19,6 +21,9 @@ void main() {
 
   HttpRequest.getString('rest/owed')
   .then((resp) => owed.addAll(json.parse(resp)));
+
+  HttpRequest.getString('rest/owe')
+  .then((resp) => owe.addAll(json.parse(resp)));
 }
 
 void updateName(String resp) {
