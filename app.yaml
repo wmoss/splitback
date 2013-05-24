@@ -6,8 +6,22 @@ api_version: go1
 handlers:
   - url: /static
     secure: always
+    login: required
     static_dir: static
 
-  - url: /.*
+  - url: /
     secure: always
+    login: required
+    static_files: dart/out/main.html
+    upload: dart/out/main.html
+
+  - url: /rest/.*
+    secure: always
+    login: required
     script: _go_app
+
+  - url: /(.*)
+    secure: always
+    login: required
+    static_files: dart/out/\1
+    upload: dart/out/(.*)

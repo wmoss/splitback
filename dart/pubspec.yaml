@@ -1,0 +1,7 @@
+name: splitback
+author: Will Moss
+description: Bill splitting made easy
+dependencies:
+  js: any
+  browser: any
+  web_ui: any
