@@ -33,8 +33,8 @@ var env map[string]string
 
 func init() {
 	http.HandleFunc("/rest/signup", signup)
-	http.HandleFunc("/finduser", findUser)
-	http.HandleFunc("/bill", bill)
+	http.HandleFunc("/rest/finduser", findUser)
+	http.HandleFunc("/rest/bill", bill)
 	http.HandleFunc("/rest/remove", remove)
 	http.HandleFunc("/paySucceeded", paySucceeded)
 	http.HandleFunc("/payFailed", payFailed)

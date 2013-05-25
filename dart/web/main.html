@@ -30,6 +30,30 @@
         <div class="span3">
 
           <div class="row well">
+            <legend>New Bill</legend>
+
+            <div>
+              <input type="text" bind-value="newBill.total" on-input="newBill.adjustAmounts()" class="input-small" placeholder="Amount">
+            </div>
+
+            <div>
+              <input type="text" bind-value="newBill.notes" placeholder="Notes">
+            </div>
+
+            <div template iterate="user in newBill.recipients">
+              <div class="input-prepend" style="padding-right: 10px">
+                <button type="button" class="btn btn-mini {{user.getPaidClass()}}" on-click="user.togglePaid()" style="width: 50px; height: 20px">
+                  {{user.getPaidText()}}
+                </button>
+                <input type="text" bind-value="user.name" autocomplete="off" on-click="user.updateTypeahead($event)" on-change="newBill.adjustRecipients()" placeholder="...">
+                <input type="text" bind-value="user.amount" class="input-mini" readonly>
+              </div>
+            </div>
+
+            <button type="submit" class="btn" on-click="newBill.add()">Send Bill</button>
+          </div>
+
+          <div class="row well">
             <legend>Settle Bills</legend>
 
             <div class="row-fluid">
