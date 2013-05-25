@@ -12,8 +12,8 @@ handlers:
   - url: /
     secure: always
     login: required
-    static_files: dart/out/main.html
-    upload: dart/out/main.html
+    static_files: dart/web/out/web/main.html
+    upload: dart/web/out/web/main.html
 
   - url: /rest/.*
     secure: always
@@ -23,5 +23,5 @@ handlers:
   - url: /(.*)
     secure: always
     login: required
-    static_files: dart/out/\1
-    upload: dart/out/(.*)
+    static_files: dart/web/out/web/\1
+    upload: dart/web/out/web/(.*)

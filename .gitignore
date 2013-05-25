@@ -1,6 +1,7 @@
 *.datastore
 priv/
 index.yaml
+dart/.buildlog
 dart/packages
-dart/out
+dart/web/out
 dart/pubspec.lock
