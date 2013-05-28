@@ -41,8 +41,6 @@ func init() {
 	http.HandleFunc("/rest/name", name)
 	http.HandleFunc("/rest/owed", owed)
 	http.HandleFunc("/rest/owe", owe)
-	http.HandleFunc("/", main)
-
 
 	env = getEnv()
 
@@ -77,21 +75,6 @@ func getEnv() (env map[string]string) {
 	return
 }
 
-func requireLogin(c appengine.Context, w http.ResponseWriter, r *http.Request) bool {
-	u := user.Current(c)
-	if u == nil {
-		url, err := user.LoginURL(c, r.URL.String())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return true
-		}
-		w.Header().Set("Location", url)
-		w.WriteHeader(http.StatusFound)
-		return true
-	}
-	return false
-}
-
 type User struct {
 	Name  string
 	Email string
@@ -99,9 +82,6 @@ type User struct {
 
 func signup(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	if requireLogin(c, w, r) {
-		return
-	}
 
 	current := user.Current(c)
 	u := User{
@@ -116,39 +96,8 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func main(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
-	if requireLogin(c, w, r) {
-		return
-	}
-
-	user, _ := getUserBy(c, "Email", user.Current(c).Email)
-	newUser := user == nil
-
-	tc := map[string]interface{}{"New": newUser}
-	if newUser {
-		tc["Name"] = "New User"
-	} else {
-		tc["Name"] = user.Name
-		tc["Owed"] = buildOwed(c)
-		tc["Owe"] = buildOwe(c)
-		tc["Bills"] = buildBills(c)
-	}
-
-	tmpl, _ := template.ParseFiles("templates/main.html", "templates/join.html")
-
-	if err := tmpl.Execute(w, tc); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	return
-}
-
 func name(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	if requireLogin(c, w, r) {
-		return
-	}
 
 	user, _ := getUserBy(c, "Email", user.Current(c).Email)
 
@@ -370,51 +319,6 @@ func paySucceeded(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func buildOwed(c appengine.Context) string {
-	_, key := getUserBy(c, "Email", user.Current(c).Email)
-
-	q := datastore.NewQuery("Bills").
-		Filter("Sender =", key)
-
-	out := bytes.NewBuffer(nil)
-	tmpl, _ := template.ParseFiles("templates/bill-row.html")
-
-	for t := q.Run(c); ; {
-		var bill Bill
-		key, err := t.Next(&bill)
-		if err == datastore.Done {
-			break
-		}
-		if err != nil {
-			panic(err)
-		}
-
-		receivers := make([]*User, len(bill.Receivers))
-
-		for i := range receivers {
-			receivers[i] = new(User)
-		}
-		err = datastore.GetMulti(c, bill.Receivers, receivers)
-		if err != nil {
-			panic(err)
-		}
-
-		tc := map[string]interface{}{
-			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
-			"Receivers": receivers,
-			"Amounts":   bill.Amounts,
-			"Paid":      getPaid(bill.DatePaid),
-			"Key":       key.Encode(),
-			"Note":      bill.Note,
-		}
-		if err := tmpl.Execute(out, tc); err != nil {
-			panic(err)
-		}
-	}
-
-	return out.String()
-}
-
 func owed(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
@@ -505,154 +409,6 @@ func owe(w http.ResponseWriter, r *http.Request) {
 
 	encoder := json.NewEncoder(w)
 	encoder.Encode(resp)
-}
-
-func buildOwe(c appengine.Context) string {
-	_, key := getUserBy(c, "Email", user.Current(c).Email)
-
-	q := datastore.NewQuery("Bills").
-		Filter("Receivers =", key)
-
-	out := bytes.NewBuffer(nil)
-	tmpl, _ := template.ParseFiles("templates/bill-row.html")
-
-	for t := q.Run(c); ; {
-		var bill Bill
-		_, err := t.Next(&bill)
-		if err == datastore.Done {
-			break
-		}
-		if err != nil {
-			panic(err)
-		}
-		if bill.Sender.Equal(key) {
-			continue
-		}
-
-		var sender User
-		err = datastore.Get(c, bill.Sender, &sender)
-		if err != nil {
-			panic(err)
-		}
-
-		index := findInBill(&bill, key)
-		tc := map[string]interface{}{
-			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
-			"Receivers": []User{sender},
-			"Amounts":   []float32{bill.Amounts[index]},
-			"Paid":      getPaid([]time.Time{bill.DatePaid[index]}),
-			"Note":      bill.Note,
-		}
-		if err := tmpl.Execute(out, tc); err != nil {
-			panic(err)
-		}
-	}
-
-	return out.String()
-}
-
-func buildPayRow(c appengine.Context, previous *Bill, amount float32, bills string, out *bytes.Buffer) {
-	tmpl, err := template.ParseFiles("templates/pay-row.html")
-	if err != nil {
-		panic(err)
-	}
-
-	var sender User
-	err = datastore.Get(c, previous.Sender, &sender)
-	if err != nil {
-		panic(err)
-	}
-
-	_, user := getUserBy(c, "Email", user.Current(c).Email)
-
-	payKey := getPayKey(c, user, previous.Sender, bills, amount)
-
-	tc := map[string]interface{}{
-		"Name":       sender.Name,
-		"Amount":     fmt.Sprintf("%.2f", amount),
-		"PayKey":     payKey,
-		"PayFormUrl": config.PayFormUrl,
-	}
-	if err := tmpl.Execute(out, tc); err != nil {
-		panic(err)
-	}
-}
-
-func buildBills(c appengine.Context) string {
-	_, key := getUserBy(c, "Email", user.Current(c).Email)
-
-	q := datastore.NewQuery("Bills").
-		Filter("Receivers =", key).
-		Order("Sender")
-
-	out := bytes.NewBuffer(nil)
-
-	previous := Bill{}
-	amount := float32(0.0)
-	bills := make([]string, 0)
-	first := true
-	weeklyAmount := float32(0.0)
-	oneWeekAgo := time.Now().Add(-time.Hour * 24 * 7)
-	for t := q.Run(c); ; {
-		var bill Bill
-		billKey, err := t.Next(&bill)
-		if err == datastore.Done {
-			if !first {
-				buildPayRow(c, &previous, amount, strings.Join(bills, ","), out)
-			}
-			break
-		}
-		if err != nil {
-			panic(err)
-		}
-
-		if bill.Sender.Equal(key) {
-			if bill.Timestamp.After(oneWeekAgo) {
-				for i, v := range bill.DatePaid {
-					if v.After(time.Unix(0, 0)) && !bill.Receivers[i].Equal(key) {
-						weeklyAmount += bill.Amounts[i]
-					}
-				}
-			}
-			continue
-		}
-
-		index := findInBill(&bill, key)
-
-		if datePaid := bill.DatePaid[index]; datePaid.After(time.Unix(0, 0)) {
-			if datePaid.After(oneWeekAgo) {
-				weeklyAmount += bill.Amounts[index]
-			}
-			continue
-		}
-
-		if weeklyAmount > 250 {
-			break
-		}
-
-		if bill.Sender.Equal(previous.Sender) || first {
-			amount += bill.Amounts[index]
-			bills = append(bills, billKey.Encode())
-		} else {
-			buildPayRow(c, &previous, amount, strings.Join(bills, ","), out)
-			amount = bill.Amounts[index]
-			bills = []string{billKey.Encode()}
-		}
-
-		first = false
-		previous = bill
-	}
-
-	//Paypal requires we limit to 250 sent or received per week
-	if weeklyAmount > 250 {
-		raw, err := ioutil.ReadFile("templates/over-limit.html")
-		if err != nil {
-			panic(err)
-		}
-		return string(raw)
-	}
-
-	return out.String()
 }
 
 func findInBill(bill *Bill, key *datastore.Key) int {
