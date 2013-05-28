@@ -325,7 +325,8 @@ func owed(w http.ResponseWriter, r *http.Request) {
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
 
 	q := datastore.NewQuery("Bills").
-		Filter("Sender =", key)
+		Filter("Sender =", key).
+		Order("-Timestamp")
 
 	resp := make([]map[string]interface{}, 0)
 	for t := q.Run(c); ; {
@@ -374,7 +375,8 @@ func owe(w http.ResponseWriter, r *http.Request) {
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
 
 	q := datastore.NewQuery("Bills").
-		Filter("Receivers =", key)
+		Filter("Receivers =", key).
+		Order("-Timestamp")
 
 	resp := make([]map[string]interface{}, 0)
 	for t := q.Run(c); ; {
