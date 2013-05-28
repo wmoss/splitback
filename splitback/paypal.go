@@ -6,50 +6,67 @@ import (
 	"appengine/urlfetch"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"text/template"
+	"strings"
 )
 
-const payTmpl = `{
+const payTmplString = `{
   "actionType":"PAY",
   "currencyCode":"USD",
-  "receiverList":{"receiver":[{
-      "amount":"{{.Amount}}",
-      "email":"{{.EmailPrefix}}{{.RecipientEmail}}",
-      "paymentType":"PERSONAL"
-    }]
-  },
+  "receiverList":{"receiver":[{{.Receivers}}]},
 
-  "returnUrl":"{{.AppUrl}}/paySucceeded?Sender={{.Sender}}&Bills={{.Bills}}",
+  "returnUrl":"{{.AppUrl}}/rest/paySucceeded?Sender={{.Sender}}&Bills={{.Bills}}",
 
-  "cancelUrl": "{{.AppUrl}}/payFailed",
+  "cancelUrl": "{{.AppUrl}}/rest/payFailed",
   "requestEnvelope":{
     "errorLanguage":"en_US",
     "detailLevel":"ReturnAll"
   }
 }`
 
-func getPayKey(c appengine.Context, sender *datastore.Key, recipient *datastore.Key, bills string, amount float32) string {
-	var user User
-	err := datastore.Get(c, recipient, &user)
+const receiverTmplString = `{
+      "amount":"{{.Amount}}",
+      "email":"{{.EmailPrefix}}{{.RecipientEmail}}",
+      "paymentType":"PERSONAL"
+    }`
 
-	tmpl, err := template.New("pay").Parse(payTmpl)
+func getPayKey(c appengine.Context, sender *datastore.Key, recipients []map[string]interface{}, bills []string) string {
+	payTmpl, err := template.New("pay").Parse(payTmplString)
 	if err != nil {
 		panic(err)
 	}
 
+	receiverTmpl, err := template.New("receiver").Parse(receiverTmplString)
+	if err != nil {
+		panic(err)
+	}
+
+	receivers := make([]string, len(recipients))
+	for i, recipient := range recipients {
+		out := bytes.NewBuffer(nil)
+
+		tc := map[string]interface{}{
+			"RecipientEmail": recipient["Email"].(string),
+			"Amount":         recipient["Amount"].(string),
+			"EmailPrefix":    config.EmailPrefix,
+		}
+		if err := receiverTmpl.Execute(out, tc); err != nil {
+			panic(err)
+		}
+
+		receivers[i] = out.String()
+	}
+
 	tc := map[string]interface{}{
 		"Sender":         sender.Encode(),
-		"Bills":          bills,
-		"RecipientEmail": user.Email,
-		"Amount":         fmt.Sprintf("%.2f", amount),
+		"Bills":          strings.Join(bills, ","),
 		"AppUrl":         config.AppUrl,
-		"EmailPrefix":    config.EmailPrefix,
+		"Receivers":      strings.Join(receivers, ","),
 	}
 	var data bytes.Buffer
-	tmpl.Execute(&data, tc)
+	payTmpl.Execute(&data, tc)
 
 	req, err := http.NewRequest("POST", config.PayKeyUrl, &data)
 	if err != nil {

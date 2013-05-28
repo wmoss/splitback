@@ -63,11 +63,20 @@
               </div>
             </div>
 
-            <div id="bill-list">
-                <p class="text-center">You have no bills to settle.</p>
+            <form action="{{payFormUrl}}" target="PPDGFrame" class="standard .form-inline">
+              <input id="type" type="hidden" name="expType" value="light">
+              <input id="paykey" type="hidden" name="paykey" value="{{payKey}}">
+              <button type="submit" id="pay-button" class="btn">Pay All</button>
+            </form>
+
+             <p template instantiate="if payments.isEmpty" class="text-center">You have no bills to settle.</p>
+
+            <div template iterate="payment in payments">
+              <div>
+                {{payment["Name"]}} : ${{payment["Amount"]}}
+              </div>
             </div>
           </div>
-
         </div>
 
         <div class="span9">
@@ -164,32 +173,6 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.0/bootstrap.min.js"></script>
 
     <script src="//www.paypalobjects.com/js/external/dg.js"></script>
-
-    <script type="text/javascript">
-      var name = ".Name";
-      var currentPaypalFlow;
-
-      function paymentFailed() {
-        currentPaypalFlow.closeFlow();
-        $("#pay-failed").show();
-      }
-
-      function paymentSucceeded() {
-        $("#bill-list").html('<p class="text-center">You have no bills to settle.</p>');
-        currentPaypalFlow.closeFlow();
-      }
-
-      $(document).ready(function() {
-        $(".pay").each(function(index) {
-          var id = "pay-button-" + index;
-          $(this).attr("id", id);
-          var flow = new PAYPAL.apps.DGFlow({trigger : id});
-          $(this).click(function() {
-            currentPaypalFlow = flow;
-          });
-        });
-      });
-    </script>
 
     <script type="application/dart" src="main.dart"></script>
 

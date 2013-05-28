@@ -34,13 +34,14 @@ var env map[string]string
 func init() {
 	http.HandleFunc("/rest/signup", signup)
 	http.HandleFunc("/rest/finduser", findUser)
-	http.HandleFunc("/rest/bill", bill)
 	http.HandleFunc("/rest/remove", remove)
-	http.HandleFunc("/paySucceeded", paySucceeded)
-	http.HandleFunc("/payFailed", payFailed)
+	http.HandleFunc("/rest/bill", bill)
+	http.HandleFunc("/rest/paySucceeded", paySucceeded)
+	http.HandleFunc("/rest/payFailed", payFailed)
 	http.HandleFunc("/rest/name", name)
 	http.HandleFunc("/rest/owed", owed)
 	http.HandleFunc("/rest/owe", owe)
+	http.HandleFunc("/rest/payments", payments)
 
 	env = getEnv()
 
@@ -233,8 +234,6 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Fprint(w, buildOwed(c))
 }
 
 func remove(w http.ResponseWriter, r *http.Request) {
@@ -411,6 +410,91 @@ func owe(w http.ResponseWriter, r *http.Request) {
 
 	encoder := json.NewEncoder(w)
 	encoder.Encode(resp)
+}
+
+func payments(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	_, key := getUserBy(c, "Email", user.Current(c).Email)
+
+	q := datastore.NewQuery("Bills").
+		Filter("Receivers =", key).
+		Order("Sender")
+
+	previous := Bill{}
+	amount := float32(0.0)
+	bills := make([]string, 0)
+	first := true
+	payments := make([]map[string]interface{}, 0)
+	for t := q.Run(c); ; {
+		var bill Bill
+		billKey, err := t.Next(&bill)
+		if err == datastore.Done {
+			if !first {
+				payments = append(payments, buildPayment(c, &previous, amount))
+			}
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+
+		if bill.Sender.Equal(key) {
+			continue
+		}
+
+		index := findInBill(&bill, key)
+
+		if datePaid := bill.DatePaid[index]; datePaid.After(time.Unix(0, 0)) {
+			continue
+		}
+
+		if bill.Sender.Equal(previous.Sender) || first {
+			amount += bill.Amounts[index]
+		} else {
+			payments = append(payments, buildPayment(c, &previous, amount))
+			amount = bill.Amounts[index]
+		}
+
+		bills = append(bills, billKey.Encode())
+
+		first = false
+		previous = bill
+	}
+
+	var resp map[string]interface{}
+	if len(payments) == 0 {
+		resp = map[string]interface{} {
+			"PayKey":     "",
+			"PayFormUrl": config.PayFormUrl,
+			"Payments": payments,
+		}
+	} else {
+		payKey := getPayKey(c, key, payments, bills)
+
+		resp = map[string]interface{} {
+			"PayKey":     payKey,
+			"PayFormUrl": config.PayFormUrl,
+			"Payments": payments,
+		}
+	}
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(resp)
+}
+
+func buildPayment(c appengine.Context, previous *Bill, amount float32) map[string]interface{} {
+	var sender User
+	err := datastore.Get(c, previous.Sender, &sender)
+	if err != nil {
+		panic(err)
+	}
+
+	return map[string]interface{}{
+		"Name":       sender.Name,
+		"Email":      sender.Email,
+		"Amount":     fmt.Sprintf("%.2f", amount),
+	}
 }
 
 func findInBill(bill *Bill, key *datastore.Key) int {

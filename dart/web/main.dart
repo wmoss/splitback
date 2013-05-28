@@ -12,25 +12,69 @@ List<Map<String, Object>> owed = toObservable(new List());
 
 List<Map<String, Object>> owe = toObservable(new List());
 
+@observable String payFormUrl;
+@observable String payKey;
+List<Map<String, Object>> payments = toObservable(new List());
+
 Bill newBill = toObservable(new Bill());
 
+var paypalFlow;
 
 void main() {
   // Enable this to use Shadow DOM in the browser.
   //useShadowDom = true;
 
+  setupPaypal();
+
   HttpRequest.getString('rest/name')
   .then(updateName);
 
-  HttpRequest.getString('rest/owe')
-  .then((resp) => owe.addAll(json.parse(resp)));
-
+  updateOwe();
   updateOwed();
+  updatePayments();
+}
+
+void updateOwe() {
+  HttpRequest.getString('rest/owe')
+  .then((resp) {
+    owe.clear();
+    owe.addAll(json.parse(resp));
+  });
 }
 
 void updateOwed() {
   HttpRequest.getString('rest/owed')
-  .then((resp) => owed.addAll(json.parse(resp)));
+  .then((resp) {
+    owed.clear();
+    owed.addAll(json.parse(resp));
+  });
+}
+
+updatePayments() {
+  HttpRequest.getString('rest/payments')
+  .then((raw) {
+    var resp = json.parse(raw);
+    payments.clear();
+    payments.addAll(resp["Payments"]);
+    payKey = resp["PayKey"];
+    payFormUrl = resp["PayFormUrl"];
+  });
+}
+
+void setupPaypal() {
+  js.context.paymentFailed = new js.Callback.many(() {
+    paypalFlow.closeFlow();
+    js.context.jQuery('#pay-failed').show();
+  });
+
+  js.context.paymentSucceeded = new js.Callback.many(() {
+    updateOwe();
+    updatePayments();
+    paypalFlow.closeFlow();
+  });
+
+  paypalFlow = new js.Proxy(js.context.PAYPAL.apps.DGFlow, js.map({"trigger" : "pay-button"}));
+  js.retain(paypalFlow);
 }
 
 void updateName(String resp) {
