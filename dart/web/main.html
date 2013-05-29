@@ -105,8 +105,8 @@
                       {{bill['Timestamp']}}
                     </td>
 
-                    <td>
-                      {{bill['Note']}}
+                    <td on-click="editNote($event, bill)">
+                      <div>{{bill['Note']}}</div>
                     </td>
 
                     <td template iterate="receiver in bill['Receivers']">

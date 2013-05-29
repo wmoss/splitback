@@ -42,6 +42,7 @@ func init() {
 	http.HandleFunc("/rest/owed", owed)
 	http.HandleFunc("/rest/owe", owe)
 	http.HandleFunc("/rest/payments", payments)
+	http.HandleFunc("/rest/updateNote", updateNote)
 
 	env = getEnv()
 
@@ -481,6 +482,42 @@ func payments(w http.ResponseWriter, r *http.Request) {
 
 	encoder := json.NewEncoder(w)
 	encoder.Encode(resp)
+}
+
+func updateNote(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	defer r.Body.Close()
+	raw, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	body := make(map[string]interface{}, 0)
+	if err := json.Unmarshal(raw, &body); err != nil {
+		panic(err)
+	}
+
+	key, err := datastore.DecodeKey(body["key"].(string))
+	if err != nil {
+		panic(err)
+	}
+
+	var bill Bill
+	err = datastore.Get(c, key, &bill)
+	if err == datastore.ErrNoSuchEntity {
+		return
+	}
+
+	_, ukey := getUserBy(c, "Email", user.Current(c).Email)
+	if !ukey.Equal(bill.Sender) {
+		panic("You can't edit a bill that's not yours")
+	}
+
+	bill.Note = body["note"].(string)
+	if _, err := datastore.Put(c, key, &bill); err != nil {
+		panic(err)
+    }
 }
 
 func buildPayment(c appengine.Context, previous *Bill, amount float32) map[string]interface{} {

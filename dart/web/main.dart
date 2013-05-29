@@ -46,7 +46,7 @@ void updateOwed() {
   HttpRequest.getString('rest/owed')
   .then((resp) {
     owed.clear();
-    owed.addAll(json.parse(resp));
+    owed.addAll(json.parse(resp).map(toObservable));
   });
 }
 
@@ -103,6 +103,31 @@ findUser(String query, reply) {
 
   return js.array(json.parse(request.response));
 }
+
+void editNote(Event e, Map<String, Object> bill) {
+  Element target = e.currentTarget;
+
+  if (target.children.length < 2) {
+    var edit = new TextInputElement();
+    edit.value = target.text.trim();
+    edit.onBlur.listen((e) {
+      var data = json.stringify({'key': bill['Key'],
+                                 'note': edit.value,
+                                });
+      HttpRequest.request('rest/updateNote', method: 'POST', sendData: data)
+      .then((_) {
+        bill['Note'] = edit.value;
+        target.children.remove(edit);
+        target.children[0].hidden = false;
+      });
+    });
+    edit.onKeyUp.listen((e) { if (e.keyCode == KeyCode.ENTER) { edit.blur(); }});
+
+    target.children[0].hidden = true;
+    target.children.add(edit);
+    edit.focus();
+  }
+ }
 
 class Recipient {
   Bill bill;
