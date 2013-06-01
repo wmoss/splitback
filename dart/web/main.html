@@ -47,7 +47,7 @@
                   {{user.getPaidText()}}
                 </button>
                 <input type="text" bind-value="user.name" autocomplete="off" class="span7" on-click="user.updateTypeahead($event)" on-change="newBill.adjustRecipients()" placeholder="...">
-                <span class="add-on" style="width: 50px; color: {{colors[$index]}};">{{user.name == "" ? "" : "\$${user.amount}"}}</span>
+                <span class="add-on" style="width: 50px; color: {{colors[$index]}};">{{user.name == "" ? "" : "\$${user.amount.toStringAsFixed(2)}"}}</span>
               </div>
             </div>
 

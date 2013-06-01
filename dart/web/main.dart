@@ -141,7 +141,7 @@ void editNote(Event e, Map<String, Object> bill) {
 class Recipient {
   Bill bill;
   @observable String name;
-  @observable String amount;
+  @observable double amount;
   @observable bool paid;
   int weight = 100;
   bool adjusted = false;
@@ -173,7 +173,7 @@ class Recipient {
 
   Map<String, Object> toMap() {
     return {"name": name,
-            "amount": double.parse(amount),
+            "amount": amount,
             "paid": paid
            };
   }
@@ -188,21 +188,21 @@ class Bill {
     total = "0.0";
     notes = "";
     recipients.clear();
-    recipients.addAll([new Recipient(this, userName, "0.0", true),
-                       new Recipient(this, "", "0.0", false),
+    recipients.addAll([new Recipient(this, userName, 0.0, true),
+                       new Recipient(this, "", 0.0, false),
                       ]);
 
     recalculateWeights();
   }
 
   void adjustAmounts() {
-    validRecipients().forEach((r) => r.amount = (double.parse(total) * r.weight / 100).toString());
+    validRecipients().forEach((r) => r.amount = double.parse(total) * r.weight / 100);
   }
 
   void adjustRecipients() {
     if (recipients[recipients.length - 1].name != "") {
       // Expand
-      recipients.add(new Recipient(this, "", "0.0", false));
+      recipients.add(new Recipient(this, "", 0.0, false));
       recalculateWeights();
       adjustAmounts();
     } else if (recipients[recipients.length - 2].name == "") {
