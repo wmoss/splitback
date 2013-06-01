@@ -47,9 +47,11 @@
                   {{user.getPaidText()}}
                 </button>
                 <input type="text" bind-value="user.name" autocomplete="off" class="span7" on-click="user.updateTypeahead($event)" on-change="newBill.adjustRecipients()" placeholder="...">
-                <span class="add-on" style="width: 50px">${{user.amount}}</span>
+                <span class="add-on" style="width: 50px; color: {{colors[$index]}};">{{user.name == "" ? "" : "\$${user.amount}"}}</span>
               </div>
             </div>
+
+            <div id="split-chart"></div>
 
             <button type="submit" class="btn" on-click="newBill.add()">Send Bill</button>
           </div>
@@ -174,6 +176,8 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.0/bootstrap.min.js"></script>
 
     <script src="//www.paypalobjects.com/js/external/dg.js"></script>
+
+    <script src="static/js/d3.v3.min.js"></script>
 
     <script type="application/dart" src="main.dart"></script>
     <script type="application/javascript" src="static/js/dart.js"></script>

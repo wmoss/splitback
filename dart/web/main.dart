@@ -1,5 +1,6 @@
 import 'dart:html';
 import 'dart:async';
+import 'dart:math';
 import 'dart:json' as json;
 import 'package:js/js.dart' as js;
 import 'package:web_ui/web_ui.dart';
@@ -20,9 +21,16 @@ Bill newBill = toObservable(new Bill());
 
 var paypalFlow;
 
+List<String> colors = new List(10);
+
 void main() {
   // Enable this to use Shadow DOM in the browser.
   //useShadowDom = true;
+
+  var cat10 = js.context.d3.scale.category10();
+  for (int i = 0; i < 10; i++) {
+    colors[i] = cat10(i);
+  }
 
   setupPaypal();
 
@@ -32,6 +40,7 @@ void main() {
   updateOwe();
   updateOwed();
   updatePayments();
+  setupPieChart();
 }
 
 void updateOwe() {
@@ -134,6 +143,8 @@ class Recipient {
   @observable String name;
   @observable String amount;
   @observable bool paid;
+  int weight = 100;
+  bool adjusted = false;
 
   Recipient(this.bill, this.name, this.amount, this.paid);
 
@@ -180,24 +191,45 @@ class Bill {
     recipients.addAll([new Recipient(this, userName, "0.0", true),
                        new Recipient(this, "", "0.0", false),
                       ]);
+
+    recalculateWeights();
   }
 
   void adjustAmounts() {
-    var count = recipients.where((user) => !user.name.isEmpty).length;
-    var divided = double.parse(total) / count;
-    recipients.forEach((user) { if (!user.name.isEmpty) { user.amount = divided.toString(); }});
+    validRecipients().forEach((r) => r.amount = (double.parse(total) * r.weight / 100).toString());
   }
 
   void adjustRecipients() {
     if (recipients[recipients.length - 1].name != "") {
       // Expand
       recipients.add(new Recipient(this, "", "0.0", false));
+      recalculateWeights();
       adjustAmounts();
     } else if (recipients[recipients.length - 2].name == "") {
       // Contract
       recipients.removeLast();
+      recalculateWeights();
       adjustAmounts();
     }
+  }
+
+  void recalculateWeights() {
+    List<Recipient> recipients = validRecipients().toList();
+    List<Recipient> movable = recipients.where((r) => !r.adjusted).toList();
+    if (movable.isEmpty) {
+      recipients.last.adjusted = false;
+      recalculateWeights();
+      return;
+    }
+
+    int remaining = 100 - recipients.where((r) => r.adjusted).fold(0, (p, e) => p + e.weight);
+    int divided = (remaining / movable.length).round();
+    for (int i = 0; i < movable.length - 1; i++) {
+      movable[i].weight = divided;
+      remaining -= divided;
+    }
+    movable.last.weight = remaining;
+    updatePieChart();
   }
 
   void add() {
@@ -210,4 +242,89 @@ class Bill {
       initialize();
     });
   }
+
+  validRecipients() => recipients.where((r) => r.name != "");
+}
+
+int width = 250, height = 250, radius = 125;
+js.Proxy svg, d3 = js.retain(js.context.d3);
+void setupPieChart() {
+  js.scoped(() {
+    svg = d3.select("#split-chart").append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("g")
+        .attr("transform", "translate(" + (width / 2).toString() + "," + (height / 2).toString() + ")");
+    js.retain(svg);
+  });
+}
+
+void updatePieChart() {
+  js.scoped(() {
+    List<js.Proxy> data = new List();
+    List<Recipient> valid = newBill.validRecipients().toList();
+    for (int i = 0; i < valid.length; i++) {
+      data.add(js.map({'i': i, 'w': valid[i].weight}));
+    }
+    js.FunctionProxy pie = d3.layout.pie()
+      .sort(new js.Callback.many((r, i) => r['i']))
+      .value(new js.Callback.many((r, i) => r['w']));
+
+    js.FunctionProxy color = d3.scale.category10();
+
+    js.Proxy arc = d3.svg.arc()
+      .innerRadius(0)
+      .outerRadius(radius - 20);
+
+    js.Proxy drag = d3.behavior.drag()
+      .on("drag", new js.Callback.many(dragPieChart));
+
+    js.Proxy arcs = svg.selectAll(".arc")
+      .data(pie(js.array(data)));
+    js.Proxy g = arcs.enter()
+      .append("g").attr("class", "arc");
+    g.append("path");
+    g.append("text");
+    g['call'](drag); //call is a reserved word in dart, so we need to call the method this way
+
+    arcs.exit().remove();
+
+    svg.selectAll("path")
+      .data(pie(js.array(data)))
+      .attr("d", arc)
+      .attr("fill", new js.Callback.many((d, i, c) => color(i)));
+
+    svg.selectAll("text")
+      .data(pie(js.array(data)))
+      .attr("transform", new js.Callback.many((d, i, c) => "translate(" + arc.centroid(d).toString() + ")"))
+      .attr("dy", ".35em")
+      .style("fill", "white")
+      .text(new js.Callback.many((d, i, c) => d.data['w'].toStringAsFixed(0) + '%'));
+  });
+}
+
+void dragPieChart(d, i, c) {
+  List<Recipient> recipients = newBill.validRecipients().toList();
+  Recipient active = newBill.recipients[d.data['i']];
+  if (recipients.where((r) => !r.adjusted && r != active).length == 0) {
+    return;
+  }
+
+  active.adjusted = true;
+
+  List<Recipient> movable = recipients.where((r) => !r.adjusted).toList();
+
+  int delta = d3.event.dx * movable.length;
+  int value = active.weight + delta;
+  int fixedAmount = recipients.where((r) => r.adjusted).fold(0, (p, e) => p + e.weight);
+  if (value < 1 || value > 100 - (fixedAmount  - active.weight) - movable.length) {
+    return;
+  }
+
+  active.weight += delta;
+  movable.forEach((r) => r.weight -= (delta / movable.length).toInt());
+
+  updatePieChart();
+  newBill.adjustAmounts();
+
 }
