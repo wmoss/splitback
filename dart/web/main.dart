@@ -147,6 +147,7 @@ class Recipient {
   bool adjusted = false;
 
   Recipient(this.bill, this.name, this.amount, this.paid);
+  Recipient.empty(this.bill) : name = "", amount = 0.0, paid = false;
 
   String getPaidClass() {
     return this.paid ? "btn-success" : "btn-danger";
@@ -189,7 +190,7 @@ class Bill {
     notes = "";
     recipients.clear();
     recipients.addAll([new Recipient(this, userName, 0.0, true),
-                       new Recipient(this, "", 0.0, false),
+                       new Recipient.empty(this),
                       ]);
 
     recalculateWeights();
@@ -202,7 +203,7 @@ class Bill {
   void adjustRecipients() {
     if (recipients[recipients.length - 1].name != "") {
       // Expand
-      recipients.add(new Recipient(this, "", 0.0, false));
+      recipients.add(new Recipient.empty(this));
       recalculateWeights();
       adjustAmounts();
     } else if (recipients[recipients.length - 2].name == "") {
