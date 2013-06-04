@@ -160,7 +160,7 @@ class Recipient {
 
   void updateNamefromTypeahead(elem) {
     this.name = elem;
-    bill.adjustRecipients();
+    bill.maybeExpandRecipients();
   }
   //I would hope there is a better way to do this (like on-load) but I can't find it
   void updateTypeahead(Event e) {
@@ -197,13 +197,17 @@ class Bill {
     validRecipients().forEach((r) => r.amount = double.parse(total) * r.weight / 100);
   }
 
-  void adjustRecipients() {
+  void maybeExpandRecipients() {
     if (recipients[recipients.length - 1].name != "") {
       // Expand
       recipients.add(new Recipient.empty(this));
       recalculateWeights();
       adjustAmounts();
-    } else if (recipients[recipients.length - 2].name == "") {
+    }
+  }
+
+  void maybeContractRecipients() {
+    if (recipients[recipients.length - 2].name == "") {
       // Contract
       recipients.removeLast();
       recalculateWeights();
