@@ -23,9 +23,14 @@ var paypalFlow;
 
 List<String> colors = new List(10);
 
+js.Proxy friends = null;
+
 void main() {
   // Enable this to use Shadow DOM in the browser.
   //useShadowDom = true;
+
+  HttpRequest.getString('rest/finduser')
+    .then((resp) => friends = js.retain(js.array(json.parse(resp))));
 
   var cat10 = js.context.d3.scale.category10();
   for (int i = 0; i < 10; i++) {
@@ -105,14 +110,6 @@ void removeBill(String key) {
   //We should handle the error case
 }
 
-findUser(String query, reply) {
-  var request = new HttpRequest();
-  request.open('GET', 'rest/finduser', async: false);
-  request.send();
-
-  return js.array(json.parse(request.response));
-}
-
 void editNote(Event e, Map<String, Object> bill) {
   Element target = e.currentTarget;
 
@@ -167,7 +164,7 @@ class Recipient {
   }
   //I would hope there is a better way to do this (like on-load) but I can't find it
   void updateTypeahead(Event e) {
-    js.context.jQuery(e.target).typeahead(js.map({"source": new js.Callback.many(findUser),
+    js.context.jQuery(e.target).typeahead(js.map({"source": friends,
                                                   "updater": new js.Callback.many(updateNamefromTypeahead),
                                                  }));
   }
