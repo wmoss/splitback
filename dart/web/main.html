@@ -5,6 +5,7 @@
     <title>SplitBack</title>
 
     <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+    <link href="static/css/main.css" rel="stylesheet">
   </head>
   <body>
 
@@ -120,13 +121,13 @@
                     <td>
                       <template iterate="receiver in bill['Receivers']">
                         <div>
-                          <span template instantiate="if receiver['Paid']" class="label label-success">Paid</span>
-                          <span template instantiate="if !receiver['Paid']" class="label label-important">Unpaid</span>
+                          <span template instantiate="if receiver['Paid']" class="label label-success bill-status-label">Paid</span>
+                          <span template instantiate="if !receiver['Paid']" class="label label-important bill-status-label">Unpaid</span>
                           {{receiver['Name']}} : ${{receiver['Amount'].toStringAsFixed(2)}}
                         </div>
                       </template>
                       <div>
-                        <span>Total:</span>
+                        <span class="label bill-status-label">Total:</span>
                         <span>${{bill['Total'].toStringAsFixed(2)}}</span>
                       </div>
                     </td>
@@ -169,8 +170,8 @@
 
                   <td>
                     <div>
-                      <span template instantiate="if bill['Paid']" class="label label-success">Paid</span>
-                      <span template instantiate="if !bill['Paid']" class="label label-important">Unpaid</span>
+                      <span template instantiate="if bill['Paid']" class="label label-success bill-status-label">Paid</span>
+                      <span template instantiate="if !bill['Paid']" class="label label-important bill-status-label">Unpaid</span>
                       {{bill['Sender']}} : ${{bill['Amount'].toStringAsFixed(2)}}
                     </div>
                   </td>
