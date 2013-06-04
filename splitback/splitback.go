@@ -353,12 +353,14 @@ func owed(w http.ResponseWriter, r *http.Request) {
 		paid := getPaid(bill.DatePaid)
 
 		respReceivers := make([]map[string]interface{}, len(receivers))
+		total := float32(0.0)
 		for i, receiver := range receivers {
 			respReceivers[i] = map[string]interface{}{
 				"Name": receiver.Name,
 				"Amount": bill.Amounts[i],
 				"Paid": paid[i],
 			}
+			total += bill.Amounts[i];
 		}
 
 		resp = append(resp,
@@ -367,6 +369,7 @@ func owed(w http.ResponseWriter, r *http.Request) {
 			"Receivers": respReceivers,
 			"Note":      bill.Note,
 			"Key":       key.Encode(),
+			"Total":     total,
 		})
 	}
 

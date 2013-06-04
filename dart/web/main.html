@@ -117,11 +117,17 @@
                       <div>{{bill['Note']}}</div>
                     </td>
 
-                    <td template iterate="receiver in bill['Receivers']">
+                    <td>
+                      <template iterate="receiver in bill['Receivers']">
+                        <div>
+                          <span template instantiate="if receiver['Paid']" class="label label-success">Paid</span>
+                          <span template instantiate="if !receiver['Paid']" class="label label-important">Unpaid</span>
+                          {{receiver['Name']}} : ${{receiver['Amount'].toStringAsFixed(2)}}
+                        </div>
+                      </template>
                       <div>
-                        <span template instantiate="if receiver['Paid']" class="label label-success">Paid</span>
-                        <span template instantiate="if !receiver['Paid']" class="label label-important">Unpaid</span>
-                        {{receiver['Name']}} : ${{receiver['Amount'].toStringAsFixed(2)}}
+                        <span>Total:</span>
+                        <span>${{bill['Total'].toStringAsFixed(2)}}</span>
                       </div>
                     </td>
 
