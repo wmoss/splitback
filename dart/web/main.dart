@@ -310,9 +310,16 @@ void updatePieChart() {
     js.Proxy texts = labels.selectAll("text")
         .data(pie(js.array(data)));
 
+    js.Callback textTransform;
+    if (data.length > 1) {
+      textTransform = new js.Callback.many((d, i, c) => "translate(" + arc.centroid(d).toString() + ")");
+    } else {
+      textTransform = new js.Callback.many((d, i, c) => "translate(-18,0)");
+    }
+
     texts.enter()
       .append("text")
-      .attr("transform", new js.Callback.many((d, i, c) => "translate(" + arc.centroid(d).toString() + ")"))
+      .attr("transform", textTransform)
       .attr("dy", ".35em")
       .style("fill", "white")
       .text(new js.Callback.many((d, i, c) => d.data['w'].toStringAsFixed(0) + '%'));
@@ -321,7 +328,7 @@ void updatePieChart() {
     labels.selectAll("text")
       .data(pie(js.array(data)))
       .text(new js.Callback.many((d, i, c) => d.data['w'].toStringAsFixed(0) + '%'))
-      .attr("transform", new js.Callback.many((d, i, c) => "translate(" + arc.centroid(d).toString() + ")"));
+      .attr("transform", textTransform);
   });
 }
 
