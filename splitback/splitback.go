@@ -188,6 +188,11 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		}
 
 		user, key := getUserBy(c, "Name", recipient["name"].(string))
+		if user == nil {
+			http.Error(w, `{"error": "unknown recipient"}`, http.StatusBadRequest)
+			return
+		}
+
 		receivers = append(receivers, key)
 		amount := recipient["amount"].(float64)
 		amounts = append(amounts, float32(amount))

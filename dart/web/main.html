@@ -51,6 +51,11 @@
               </div>
             </div>
 
+            <div id="bill-error" class="alert alert-block alert-error fade in" hidden>
+              <button type="button" class="close" on-click="$event.target.parent.hidden = true">x</button>
+              <p><strong>Unknown recipient in bill</strong></p>
+            </div>
+
             <div id="split-chart" style="text-align: center"></div>
 
             <button type="submit" class="btn" on-click="newBill.add()">Send Bill</button>

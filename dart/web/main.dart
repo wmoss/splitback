@@ -235,6 +235,7 @@ class Bill {
   }
 
   void add() {
+    query('#bill-error').hidden = true;
     var data = {'note': notes,
                 'recipients': recipients.map((user) => user.toMap()).toList(),
                };
@@ -242,7 +243,13 @@ class Bill {
     .then((_) {
       updateOwed();
       initialize();
-    });
+    })
+    .catchError((req) {
+      Map<String, String> err = json.parse(req.currentTarget.responseText);
+      if (err['error'] == 'unknown recipient') {
+        query('#bill-error').hidden = false;
+      }
+    }, test: (req) => req.currentTarget.status == 400);
   }
 
   validRecipients() => recipients.where((r) => r.name != "");
