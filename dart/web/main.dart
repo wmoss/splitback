@@ -260,7 +260,7 @@ class Bill {
 }
 
 int width = 250, height = 250, radius = 125;
-js.Proxy svg, d3 = js.retain(js.context.d3);
+js.Proxy svg, chart, labels, d3 = js.retain(js.context.d3);
 void setupPieChart() {
   js.scoped(() {
     svg = d3.select("#split-chart").append("svg")
@@ -268,6 +268,9 @@ void setupPieChart() {
         .attr("height", height)
         .append("g")
         .attr("transform", "translate(" + (width / 2).toString() + "," + (height / 2).toString() + ")");
+    chart = js.retain(svg.append("g"));
+    labels = js.retain(svg.append("g"));
+
     js.retain(svg);
   });
 }
@@ -292,27 +295,33 @@ void updatePieChart() {
     js.Proxy drag = d3.behavior.drag()
       .on("drag", new js.Callback.many(dragPieChart));
 
-    js.Proxy arcs = svg.selectAll(".arc")
+    js.Proxy arcs = chart.selectAll("path")
       .data(pie(js.array(data)));
-    js.Proxy g = arcs.enter()
-      .append("g").attr("class", "arc");
-    g.append("path");
-    g.append("text");
-    g['call'](drag); //call is a reserved word in dart, so we need to call the method this way
+    arcs.enter().append("path");
+    arcs['call'](drag); //call is a reserved word in dart, so we need to call the method this way
 
     arcs.exit().remove();
 
-    svg.selectAll("path")
+    chart.selectAll("path")
       .data(pie(js.array(data)))
       .attr("d", arc)
       .attr("fill", new js.Callback.many((d, i, c) => color(i)));
 
-    svg.selectAll("text")
-      .data(pie(js.array(data)))
+    js.Proxy texts = labels.selectAll("text")
+        .data(pie(js.array(data)));
+
+    texts.enter()
+      .append("text")
       .attr("transform", new js.Callback.many((d, i, c) => "translate(" + arc.centroid(d).toString() + ")"))
       .attr("dy", ".35em")
       .style("fill", "white")
       .text(new js.Callback.many((d, i, c) => d.data['w'].toStringAsFixed(0) + '%'));
+    texts.exit().remove();
+
+    labels.selectAll("text")
+      .data(pie(js.array(data)))
+      .text(new js.Callback.many((d, i, c) => d.data['w'].toStringAsFixed(0) + '%'))
+      .attr("transform", new js.Callback.many((d, i, c) => "translate(" + arc.centroid(d).toString() + ")"));
   });
 }
 
