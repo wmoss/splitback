@@ -207,6 +207,8 @@ class Bill {
       recipients.add(new Recipient.empty(this));
       recalculateWeights();
       adjustAmounts();
+      new Timer(new Duration(milliseconds: 5),
+                () => queryAll(".recipient").last.focus());
     }
   }
 
