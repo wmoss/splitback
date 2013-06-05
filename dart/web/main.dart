@@ -25,6 +25,8 @@ List<String> colors = new List(10);
 
 js.Proxy friends = null;
 
+StreamSubscription<MouseEvent> amountDragListener = null;
+
 void main() {
   // Enable this to use Shadow DOM in the browser.
   //useShadowDom = true;
@@ -46,6 +48,8 @@ void main() {
   updateOwed();
   updatePayments();
   setupPieChart();
+
+  query('body').onMouseUp.listen((_) => cancelAmountDragListener());
 }
 
 void updateOwe() {
@@ -313,8 +317,12 @@ void updatePieChart() {
 }
 
 void dragPieChart(d, i, c) {
+  adjustPieChart(d.data['i'], d3.event.dx);
+}
+
+void adjustPieChart(int index, int dx) {
   List<Recipient> recipients = newBill.validRecipients().toList();
-  Recipient active = newBill.recipients[d.data['i']];
+  Recipient active = newBill.recipients[index];
   if (recipients.where((r) => !r.adjusted && r != active).length == 0) {
     return;
   }
@@ -323,7 +331,7 @@ void dragPieChart(d, i, c) {
 
   List<Recipient> movable = recipients.where((r) => !r.adjusted).toList();
 
-  int delta = d3.event.dx * movable.length;
+  int delta = dx * movable.length;
   int value = active.weight + delta;
   int fixedAmount = recipients.where((r) => r.adjusted).fold(0, (p, e) => p + e.weight);
   if (value < 1 || value > 100 - (fixedAmount  - active.weight) - movable.length) {
@@ -335,5 +343,20 @@ void dragPieChart(d, i, c) {
 
   updatePieChart();
   newBill.adjustAmounts();
+}
 
+void cancelAmountDragListener() {
+  if (amountDragListener != null) {
+    amountDragListener.cancel();
+    amountDragListener = null;
+  }
+}
+
+void dragAmountStart(int index, MouseEvent e) {
+  if (e.which == 1) {
+    cancelAmountDragListener();
+    amountDragListener = query('body').onMouseMove.listen((e) {
+      adjustPieChart(index, e.movementX);
+    });
+  }
 }
