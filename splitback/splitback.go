@@ -38,6 +38,7 @@ func init() {
 	http.HandleFunc("/rest/bill", bill)
 	http.HandleFunc("/rest/paySucceeded", paySucceeded)
 	http.HandleFunc("/rest/payFailed", payFailed)
+	http.HandleFunc("/rest/payIpn", payIpn)
 	http.HandleFunc("/rest/name", name)
 	http.HandleFunc("/rest/owed", owed)
 	http.HandleFunc("/rest/owe", owe)
@@ -287,6 +288,19 @@ func payFailed(w http.ResponseWriter, r *http.Request) {
 }
 
 func paySucceeded(w http.ResponseWriter, r *http.Request) {
+	tmpl, _ := template.ParseFiles("templates/paypal-redirect.html")
+
+	tc := map[string]interface{}{
+		"CallbackFunction": "paymentSucceeded",
+	}
+	if err := tmpl.Execute(w, tc); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+//TODO: Paypal's website recommends you call back to it and check
+// the id of the request to ensure you're not being spoofed
+func payIpn(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
 	sender, _ := datastore.DecodeKey(r.FormValue("Sender"))
@@ -312,15 +326,6 @@ func paySucceeded(w http.ResponseWriter, r *http.Request) {
 	_, err = datastore.PutMulti(c, billKeys, bills)
 	if err != nil {
 		panic(err)
-	}
-
-	tmpl, _ := template.ParseFiles("templates/paypal-redirect.html")
-
-	tc := map[string]interface{}{
-		"CallbackFunction": "paymentSucceeded",
-	}
-	if err := tmpl.Execute(w, tc); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 

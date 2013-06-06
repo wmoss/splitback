@@ -15,6 +15,10 @@ handlers:
     static_files: dart/web/out/web/main.html
     upload: dart/web/out/web/main.html
 
+  - url: /rest/payIpn
+    secure: always
+    script: _go_app
+
   - url: /rest/.*
     secure: always
     login: required

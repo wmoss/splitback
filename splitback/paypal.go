@@ -17,9 +17,10 @@ const payTmplString = `{
   "currencyCode":"USD",
   "receiverList":{"receiver":[{{.Receivers}}]},
 
-  "returnUrl":"{{.AppUrl}}/rest/paySucceeded?Sender={{.Sender}}&Bills={{.Bills}}",
-
+  "returnUrl":"{{.AppUrl}}/rest/paySucceeded",
+  "ipnNotificationUrl":"{{.AppUrl}}/rest/payIpn?Sender={{.Sender}}&Bills={{.Bills}}",
   "cancelUrl": "{{.AppUrl}}/rest/payFailed",
+
   "requestEnvelope":{
     "errorLanguage":"en_US",
     "detailLevel":"ReturnAll"
