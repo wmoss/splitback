@@ -166,16 +166,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 
 	tmpl, _ := template.ParseFiles("templates/new-bill.email")
 
-	defer r.Body.Close()
-	raw, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	body := make(map[string]interface{}, 0)
-	if err := json.Unmarshal(raw, &body); err != nil {
-		panic(err)
-	}
+	body := parseJsonBody(r)
 	recipients := body["recipients"].([]interface{})
 
 	sender, sender_key := getUserBy(c, "Email", user.Current(c).Email)
@@ -247,16 +238,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 func remove(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
-	defer r.Body.Close()
-	raw, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	body := make(map[string]interface{}, 0)
-	if err := json.Unmarshal(raw, &body); err != nil {
-		panic(err)
-	}
+	body := parseJsonBody(r)
 
 	key, err := datastore.DecodeKey(body["key"].(string))
 	if err != nil {
@@ -501,16 +483,7 @@ func payments(w http.ResponseWriter, r *http.Request) {
 func updateNote(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
-	defer r.Body.Close()
-	raw, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	body := make(map[string]interface{}, 0)
-	if err := json.Unmarshal(raw, &body); err != nil {
-		panic(err)
-	}
+	body := parseJsonBody(r)
 
 	key, err := datastore.DecodeKey(body["key"].(string))
 	if err != nil {
@@ -537,16 +510,7 @@ func updateNote(w http.ResponseWriter, r *http.Request) {
 func updateName(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
-	defer r.Body.Close()
-	raw, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	body := make(map[string]interface{}, 0)
-	if err := json.Unmarshal(raw, &body); err != nil {
-		panic(err)
-	}
+	body := parseJsonBody(r)
 
 	user, ukey := getUserBy(c, "Email", user.Current(c).Email)
 
@@ -586,4 +550,19 @@ func getPaid(datePaid []time.Time) []bool {
 		res[i] = v.After(time.Unix(0, 0))
 	}
 	return res
+}
+
+func parseJsonBody(r *http.Request) map[string]interface{} {
+	defer r.Body.Close()
+	raw, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	body := make(map[string]interface{}, 0)
+	if err := json.Unmarshal(raw, &body); err != nil {
+		panic(err)
+	}
+
+	return body
 }
