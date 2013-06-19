@@ -44,6 +44,7 @@ func init() {
 	http.HandleFunc("/rest/owe", owe)
 	http.HandleFunc("/rest/payments", payments)
 	http.HandleFunc("/rest/updateNote", updateNote)
+	http.HandleFunc("/rest/updateName", updateName)
 
 	env = getEnv()
 
@@ -529,6 +530,28 @@ func updateNote(w http.ResponseWriter, r *http.Request) {
 
 	bill.Note = body["note"].(string)
 	if _, err := datastore.Put(c, key, &bill); err != nil {
+		panic(err)
+    }
+}
+
+func updateName(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	defer r.Body.Close()
+	raw, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	body := make(map[string]interface{}, 0)
+	if err := json.Unmarshal(raw, &body); err != nil {
+		panic(err)
+	}
+
+	user, ukey := getUserBy(c, "Email", user.Current(c).Email)
+
+	user.Name = body["name"].(string)
+	if _, err := datastore.Put(c, ukey, user); err != nil {
 		panic(err)
     }
 }

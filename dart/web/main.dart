@@ -137,7 +137,15 @@ void editNote(Event e, Map<String, Object> bill) {
     target.children.add(edit);
     edit.focus();
   }
- }
+}
+
+void changeName() {
+  String name = (query('#name') as TextInputElement).value;
+  var data = json.stringify({'name': name});
+
+  HttpRequest.request('rest/updateName', method: 'POST', sendData: data)
+  .then((_) => userName = name);
+}
 
 class Recipient {
   Bill bill;
