@@ -315,6 +315,11 @@ func payIpn(w http.ResponseWriter, r *http.Request) {
 func owed(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
+	if err := r.ParseForm(); err != nil {
+		panic(err)
+	}
+	_, showPaid := r.Form["paid"]
+
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
 
 	q := datastore.NewQuery("Bills").
@@ -338,7 +343,10 @@ func owed(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		paid := getPaid(bill.DatePaid)
+		all, paid := getPaid(bill.DatePaid)
+		if !showPaid && all {
+			continue
+		}
 
 		respReceivers := make([]map[string]interface{}, len(receivers))
 		total := float32(0.0)
@@ -368,6 +376,11 @@ func owed(w http.ResponseWriter, r *http.Request) {
 func owe(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
+	if err := r.ParseForm(); err != nil {
+		panic(err)
+	}
+	_, showPaid := r.Form["paid"]
+
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
 
 	q := datastore.NewQuery("Bills").
@@ -395,12 +408,16 @@ func owe(w http.ResponseWriter, r *http.Request) {
 		}
 
 		index := findInBill(&bill, key)
+		_, paid := getPaid([]time.Time{bill.DatePaid[index]})
+		if !showPaid && paid[0] {
+			continue
+		}
 		resp = append(resp,
 			map[string]interface{}{
 			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
 			"Sender":    sender.Name,
 			"Amount":    bill.Amounts[index],
-			"Paid":      getPaid([]time.Time{bill.DatePaid[index]})[0],
+			"Paid":      paid[0],
 			"Note":      bill.Note,
 		})
 	}
@@ -544,12 +561,14 @@ func findInBill(bill *Bill, key *datastore.Key) int {
 	return -1
 }
 
-func getPaid(datePaid []time.Time) []bool {
-	res := make([]bool, len(datePaid))
+func getPaid(datePaid []time.Time) (all bool, res []bool) {
+	res = make([]bool, len(datePaid))
+	all = true
 	for i, v := range datePaid {
 		res[i] = v.After(time.Unix(0, 0))
+		all = all && res[i]
 	}
-	return res
+	return
 }
 
 func parseJsonBody(r *http.Request) map[string]interface{} {

@@ -76,16 +76,18 @@ void signupNameFocus() {
 
 }
 
-void updateOwe() {
-  HttpRequest.getString('rest/owe')
+void updateOwe([bool paid = false]) {
+  var url = 'rest/owe' + (paid ? '?paid' : '');
+  HttpRequest.getString(url)
   .then((resp) {
     owe.clear();
     owe.addAll(json.parse(resp));
   });
 }
 
-void updateOwed() {
-  HttpRequest.getString('rest/owed')
+void updateOwed([bool paid = false]) {
+  var url = 'rest/owed' + (paid ? '?paid' : '');
+  HttpRequest.getString(url)
   .then((resp) {
     owed.clear();
     owed.addAll(json.parse(resp).map(toObservable));
@@ -169,6 +171,11 @@ void changeName() {
 
   HttpRequest.request('rest/updateName', method: 'POST', sendData: data)
   .then((_) => userName = name);
+}
+
+void showPaid(f, Event e) {
+  f(true);
+  (e.target as Element).hidden = true;
 }
 
 class Recipient {
