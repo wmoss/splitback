@@ -27,6 +27,8 @@ js.Proxy friends = null;
 
 StreamSubscription<MouseEvent> amountDragListener = null;
 
+@observable String nameRequired = "";
+
 void main() {
   // Enable this to use Shadow DOM in the browser.
   //useShadowDom = true;
@@ -50,6 +52,28 @@ void main() {
   setupPieChart();
 
   query('body').onMouseUp.listen((_) => cancelAmountDragListener());
+
+  FormElement form = query("#join").query("form");
+  form.onSubmit.listen((e) {
+    if ((form.query("input") as TextInputElement).value.isEmpty) {
+      query("#joinNameContainer").classes.add("error");
+      nameRequired = "*required*";
+
+      // Stop event
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+
+    return true;
+  });
+
+}
+
+void signupNameFocus() {
+  query("#joinNameContainer").classes.remove("error");
+  nameRequired = "";
+
 }
 
 void updateOwe() {

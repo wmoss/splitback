@@ -15,15 +15,22 @@
       <div class="modal-header">
         <h3>Join</h3>
       </div>
-      <form action="/rest/signup" method="post">
-        <div class="modal-body">
-          <label>Name</label>
-          <input type="text" name="name" placeholder="Austin Powers">
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Join</button>
-        </div>
-      </form>
+      <div class="modal-body">
+        <form action="/rest/signup" method="post">
+
+          <div class="control-group" id="joinNameContainer">
+            <label class="control-label">Name {{nameRequired}}</label>
+            <div class="controls">
+              <input type="text" name="name" placeholder="Austin Powers" on-focus="signupNameFocus()">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Join</button>
+          </div>
+
+        </form>
+      </div>
     </div>
 
     <div class="container-fluid">
