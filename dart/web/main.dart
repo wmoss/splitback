@@ -23,7 +23,8 @@ var paypalFlow;
 
 List<String> colors = new List(10);
 
-js.Proxy friends = null;
+js.Proxy friendsList = null;
+Map<String, String> friends;
 
 StreamSubscription<MouseEvent> amountDragListener = null;
 
@@ -33,8 +34,7 @@ void main() {
   // Enable this to use Shadow DOM in the browser.
   //useShadowDom = true;
 
-  HttpRequest.getString('rest/finduser')
-    .then((resp) => friends = js.retain(js.array(json.parse(resp))));
+  updateFriends();
 
   var cat10 = js.context.d3.scale.category10();
   for (int i = 0; i < 10; i++) {
@@ -68,6 +68,14 @@ void main() {
     return true;
   });
 
+}
+
+void updateFriends() {
+  HttpRequest.getString('rest/finduser')
+    .then((raw) {
+      friends = json.parse(raw);
+      friendsList = js.retain(js.array(friends.keys));
+    });
 }
 
 void signupNameFocus() {
@@ -207,13 +215,14 @@ class Recipient {
   }
   //I would hope there is a better way to do this (like on-load) but I can't find it
   void updateTypeahead(Event e) {
-    js.context.jQuery(e.target).typeahead(js.map({"source": friends,
+    js.context.jQuery(e.target).typeahead(js.map({"source": friendsList,
                                                   "updater": new js.Callback.many(updateNamefromTypeahead),
                                                  }));
   }
 
   Map<String, Object> toMap() {
     return {"name": name,
+            "key": friends[name],
             "amount": amount,
             "paid": paid
            };

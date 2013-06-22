@@ -120,11 +120,14 @@ func findUser(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
 	var users []User
-	datastore.NewQuery("Users").GetAll(c, &users)
+	keys, err := datastore.NewQuery("Users").GetAll(c, &users)
+	if err != nil {
+		panic(err)
+	}
 
-	names := make([]string, len(users))
+	names := make(map[string]string)
 	for i, u := range users {
-		names[i] = u.Name
+		names[u.Name] = keys[i].Encode()
 	}
 
 	encoder := json.NewEncoder(w)
@@ -180,8 +183,19 @@ func bill(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		user, key := getUserBy(c, "Name", recipient["name"].(string))
-		if user == nil {
+		user := &User{}
+		var key *datastore.Key
+		if mkey, ok := recipient["key"]; ok && mkey != nil {
+			var err error
+			key, err = datastore.DecodeKey(mkey.(string))
+			if err != nil {
+				panic(err)
+			}
+			err = datastore.Get(c, key, user)
+			if err == datastore.ErrNoSuchEntity {
+				panic("unknown user key");
+			}
+		} else {
 			http.Error(w, `{"error": "unknown recipient"}`, http.StatusBadRequest)
 			return
 		}
