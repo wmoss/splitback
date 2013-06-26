@@ -188,14 +188,14 @@ void showPaid(f, Event e) {
 
 class Recipient {
   Bill bill;
-  @observable String name;
+  @observable String value;
   @observable double amount;
   @observable bool paid;
   int weight = 100;
   bool adjusted = false;
 
-  Recipient(this.bill, this.name, this.amount, this.paid);
-  Recipient.empty(this.bill) : name = "", amount = 0.0, paid = false;
+  Recipient(this.bill, this.value, this.amount, this.paid);
+  Recipient.empty(this.bill) : value = "", amount = 0.0, paid = false;
 
   String getPaidClass() {
     return this.paid ? "btn-success" : "btn-danger";
@@ -209,20 +209,20 @@ class Recipient {
     this.paid = !this.paid;
   }
 
-  void updateNamefromTypeahead(elem) {
-    this.name = elem;
+  void updateValuefromTypeahead(elem) {
+    this.value = elem;
     bill.maybeExpandRecipients();
   }
   //I would hope there is a better way to do this (like on-load) but I can't find it
   void updateTypeahead(Event e) {
     js.context.jQuery(e.target).typeahead(js.map({"source": friendsList,
-                                                  "updater": new js.Callback.many(updateNamefromTypeahead),
+                                                  "updater": new js.Callback.many(updateValuefromTypeahead),
                                                  }));
   }
 
   Map<String, Object> toMap() {
-    return {"name": name,
-            "key": friends[name],
+    return {"value": value,
+            "key": friends[value],
             "amount": amount,
             "paid": paid
            };
@@ -250,7 +250,7 @@ class Bill {
   }
 
   void maybeExpandRecipients() {
-    if (recipients[recipients.length - 1].name != "") {
+    if (recipients[recipients.length - 1].value != "") {
       // Expand
       recipients.add(new Recipient.empty(this));
       recalculateWeights();
@@ -261,7 +261,7 @@ class Bill {
   }
 
   void maybeContractRecipients() {
-    if (recipients[recipients.length - 2].name == "") {
+    if (recipients[recipients.length - 2].value == "") {
       // Contract
       recipients.removeLast();
       recalculateWeights();
@@ -306,7 +306,7 @@ class Bill {
     }, test: (req) => req.currentTarget.status == 400);
   }
 
-  validRecipients() => recipients.where((r) => r.name != "");
+  validRecipients() => recipients.where((r) => r.value != "");
 }
 
 int width = 250, height = 250, radius = 125;

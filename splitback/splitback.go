@@ -119,8 +119,38 @@ func name(w http.ResponseWriter, r *http.Request) {
 func findUser(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
-	var users []User
-	keys, err := datastore.NewQuery("Users").GetAll(c, &users)
+	_, key := getUserBy(c, "Email", user.Current(c).Email)
+
+	q := datastore.NewQuery("Bills").
+		Filter("Sender =", key).
+		Order("-Timestamp")
+
+	friends := make(map[*datastore.Key]bool)
+	for t := q.Run(c); ; {
+		var bill Bill
+		_, err := t.Next(&bill)
+		if err == datastore.Done {
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+
+		for _, recipient := range bill.Receivers {
+			friends[recipient] = true
+		}
+	}
+
+
+	var keys = make([]*datastore.Key, len(friends))
+	i := 0
+	for k := range friends {
+		keys[i] = k
+		i++
+	}
+
+	users := make([]User, len(keys))
+	err := datastore.GetMulti(c, keys, users)
 	if err != nil {
 		panic(err)
 	}
@@ -179,7 +209,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 	paid := make([]time.Time, 0)
 	for _, recipient := range recipients {
 		recipient := recipient.(map[string]interface{})
-		if recipient["name"] == "" {
+		if recipient["value"] == "" {
 			continue
 		}
 
@@ -196,8 +226,18 @@ func bill(w http.ResponseWriter, r *http.Request) {
 				panic("unknown user key");
 			}
 		} else {
-			http.Error(w, `{"error": "unknown recipient"}`, http.StatusBadRequest)
-			return
+			value := recipient["value"].(string)
+			if checkEmail(value) {
+				user, key = getUserBy(c, "Email", value)
+				if user == nil {
+					http.Error(w, `{"error": "unknown recipient"}`,
+						http.StatusBadRequest)
+					return
+				}
+			} else {
+				http.Error(w, `{"error": "invalid email"}`, http.StatusBadRequest)
+				return
+			}
 		}
 
 		receivers = append(receivers, key)
@@ -598,4 +638,11 @@ func parseJsonBody(r *http.Request) map[string]interface{} {
 	}
 
 	return body
+}
+
+func checkEmail(email string) bool {
+	at := strings.Index(email, "@")
+	dot := strings.Index(email, ".")
+
+	return 0 < at && 0 < dot && at < dot
 }
