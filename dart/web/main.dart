@@ -249,6 +249,11 @@ class Bill {
     validRecipients().forEach((r) => r.amount = double.parse(total) * r.weight / 100);
   }
 
+  void maybeAdjustRecipients() {
+    maybeExpandRecipients();
+    maybeContractRecipients();
+  }
+
   void maybeExpandRecipients() {
     if (recipients[recipients.length - 1].value != "") {
       // Expand
