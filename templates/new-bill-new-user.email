@@ -1,0 +1,6 @@
+Hi,
+
+{{.Sender}} has billed you {{.Amount}} for your share of "{{.Note}}" using Splitback. Go to http://split-back.appspot.com to join and settle up.
+
+Thanks,
+Splitback

@@ -88,13 +88,18 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 
 	current := user.Current(c)
-	u := User{
-		Name:  r.FormValue("name"),
-		Email: current.Email,
-	}
-	if _, err := datastore.Put(c, datastore.NewIncompleteKey(c, "Users", nil), &u); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+
+	user, key := getUserBy(c, "Email", current.Email)
+	if user != nil {
+		user.Name = r.FormValue("name")
+		if _, err := datastore.Put(c, key, user); err != nil {
+			panic(err)
+		}
+	} else {
+		if _, err := createUser(c, current.Email, r.FormValue("name")); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	http.Redirect(w, r, "/", http.StatusFound)
@@ -106,7 +111,7 @@ func name(w http.ResponseWriter, r *http.Request) {
 	user, _ := getUserBy(c, "Email", user.Current(c).Email)
 
 	result := make(map[string]interface{})
-	if user == nil {
+	if user == nil || user.Name == "" {
 		result["name"] = nil
 	} else {
 		result["name"] = user.Name
@@ -195,6 +200,7 @@ func getUserBy(c appengine.Context, by string, value string) (user *User, key *d
 }
 
 func bill(w http.ResponseWriter, r *http.Request) {
+	var err error
 	c := appengine.NewContext(r)
 
 	tmpl, _ := template.ParseFiles("templates/new-bill.email")
@@ -213,10 +219,11 @@ func bill(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		amount := recipient["amount"].(float64)
+
 		user := &User{}
 		var key *datastore.Key
 		if mkey, ok := recipient["key"]; ok && mkey != nil {
-			var err error
 			key, err = datastore.DecodeKey(mkey.(string))
 			if err != nil {
 				panic(err)
@@ -230,9 +237,22 @@ func bill(w http.ResponseWriter, r *http.Request) {
 			if checkEmail(value) {
 				user, key = getUserBy(c, "Email", value)
 				if user == nil {
-					http.Error(w, `{"error": "unknown recipient"}`,
-						http.StatusBadRequest)
-					return
+					key, err = createUser(c, value, "")
+					if err != nil {
+						panic(err)
+					}
+
+					email, _ := template.ParseFiles("templates/new-bill-new-user.email")
+					tc := map[string]interface{}{
+						"Sender":    sender.Name,
+						"Note":      body["note"].(string),
+						"Amount":    strconv.FormatFloat(amount, 'f', 2, 32),
+					}
+					out := bytes.NewBuffer(nil)
+					if err := email.Execute(out, tc); err != nil {
+						panic(err)
+					}
+					sendEmail(c, value, sender.Name, out.String())
 				}
 			} else {
 				http.Error(w, `{"error": "invalid email"}`, http.StatusBadRequest)
@@ -241,7 +261,6 @@ func bill(w http.ResponseWriter, r *http.Request) {
 		}
 
 		receivers = append(receivers, key)
-		amount := recipient["amount"].(float64)
 		amounts = append(amounts, float32(amount))
 		if recipient["paid"].(bool) {
 			paid = append(paid, time.Now())
@@ -249,7 +268,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 			paid = append(paid, time.Unix(0, 0))
 		}
 
-		if !key.Equal(sender_key) {
+		if !key.Equal(sender_key) && user != nil {
 			out := bytes.NewBuffer(nil)
 
 			tc := map[string]interface{}{
@@ -260,15 +279,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 			if err := tmpl.Execute(out, tc); err != nil {
 				panic(err)
 			}
-			msg := &mail.Message{
-				Sender:  "Splitback <splitbackapp@gmail.com>",
-				To:      []string{user.Email},
-				Subject: "You have a new bill from " + sender.Name,
-				Body:    out.String(),
-			}
-			if err := mail.Send(c, msg); err != nil {
-				c.Errorf("Couldn't send email: %v", err)
-			}
+			sendEmail(c, user.Email, sender.Name, out.String())
 		}
 	}
 
@@ -406,7 +417,7 @@ func owed(w http.ResponseWriter, r *http.Request) {
 		total := float32(0.0)
 		for i, receiver := range receivers {
 			respReceivers[i] = map[string]interface{}{
-				"Name": receiver.Name,
+				"Name": getUserName(&receiver),
 				"Amount": bill.Amounts[i],
 				"Paid": paid[i],
 			}
@@ -645,4 +656,32 @@ func checkEmail(email string) bool {
 	dot := strings.Index(email, ".")
 
 	return 0 < at && 0 < dot && at < dot
+}
+
+func createUser(c appengine.Context, email string, name string) (key *datastore.Key, err error) {
+	u := User{
+		Email: email,
+		Name: name,
+	}
+
+	return datastore.Put(c, datastore.NewIncompleteKey(c, "Users", nil), &u)
+	}
+
+func sendEmail(c appengine.Context, to string, from string, body string) {
+	msg := &mail.Message{
+		Sender:  "Splitback <splitbackapp@gmail.com>",
+		To:      []string{to},
+		Subject: "You have a new bill from " + from,
+		Body:    body,
+	}
+	if err := mail.Send(c, msg); err != nil {
+		c.Errorf("Couldn't send email: %v", err)
+	}
+}
+
+func getUserName(user *User) string {
+	if user.Name == "" {
+		return user.Email
+	}
+	return user.Name
 }
