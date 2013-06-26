@@ -389,6 +389,12 @@ void dragPieChart(d, i, c) {
 void adjustPieChart(int index, int dx) {
   List<Recipient> recipients = newBill.validRecipients().toList();
   Recipient active = newBill.recipients[index];
+
+  if (recipients.length == 2 && !active.adjusted) {
+    // If we only have two recipients, let the user drag either one
+    recipients.firstWhere((r) => r != active).adjusted = false;
+  }
+
   if (recipients.where((r) => !r.adjusted && r != active).length == 0) {
     return;
   }
