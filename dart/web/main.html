@@ -6,6 +6,8 @@
 
     <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
     <link href="static/css/main.css" rel="stylesheet">
+
+      <link rel="import" href="piechart.html">
   </head>
   <body>
 
@@ -63,6 +65,8 @@
               <button type="button" class="close" on-click="$event.target.parent.hidden = true">x</button>
               <p><strong>Unknown recipient in bill</strong></p>
             </div>
+
+            <x-piechart bill="{{newBill}}"></x-piechart>
 
             <div id="split-chart" style="text-align: center"></div>
 
