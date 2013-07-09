@@ -229,8 +229,8 @@ class Recipient {
 }
 
 class Bill {
-  @observable String total = "0.0";
-  @observable String notes = "";
+  @observable String total;
+  @observable String notes;
   List<Recipient> recipients = toObservable(new List());
 
   Stream onUpdate, onAdjust;
@@ -243,7 +243,7 @@ class Bill {
   }
 
   void initialize() {
-    total = "0.0";
+    total = "";
     notes = "";
     recipients.clear();
     recipients.addAll([new Recipient(this, userName, 0.0, true),
@@ -254,7 +254,9 @@ class Bill {
   }
 
   void adjustAmounts() {
-    validRecipients().forEach((r) => r.amount = double.parse(total) * r.weight / 100);
+    if (total.isNotEmpty) {
+      validRecipients().forEach((r) => r.amount = double.parse(total) * r.weight / 100);
+    }
   }
 
   void maybeAdjustRecipients() {

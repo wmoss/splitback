@@ -40,15 +40,15 @@
         <div class="span3" style="min-width: 300px; max-width: 340px;">
 
           <div class="row well">
-            <legend>New Bill</legend>
+            <legend>Create A Bill</legend>
 
             <div class="input-prepend">
               <span class="add-on">$</span>
-              <input type="text" bind-value="newBill.total" on-input="newBill.adjustAmounts()" class="input-small" placeholder="Amount">
+              <input type="text" bind-value="newBill.total" on-input="newBill.adjustAmounts()" class="input-small" placeholder="How much?">
             </div>
 
             <div>
-              <input type="text" class="span10" bind-value="newBill.notes" placeholder="Notes">
+              <input type="text" class="span10" bind-value="newBill.notes" placeholder="What for?">
             </div>
 
             <div template iterate="user in newBill.recipients">
@@ -56,7 +56,7 @@
                 <button type="button" class="btn {{user.getPaidClass()}}" style="width: 70px" on-click="user.togglePaid()">
                   {{user.getPaidText()}}
                 </button>
-                <input type="text" bind-value="user.value" autocomplete="off" class="span7 recipient" on-focus="user.updateTypeahead($event)" on-change="newBill.maybeAdjustRecipients()" placeholder="...">
+                <input type="text" bind-value="user.value" autocomplete="off" class="span7 recipient" on-focus="user.updateTypeahead($event)" on-change="newBill.maybeAdjustRecipients()" placeholder="Who else?">
                 <span on-mouse-down="dragAmountStart($index, $event)" class="add-on user-amount" style="cursor: default; width: 50px; user-select: none; -khtml-user-select: none; -moz-user-select: none; -webkit-user-select: none; color: {{colors[$index]}};">{{user.value == "" ? "" : "\$${user.amount.toStringAsFixed(2)}"}}</span>
               </div>
             </div>
@@ -117,7 +117,7 @@
 
         <div class="span9">
           <div class="row well">
-            <legend>Owed To Me</legend>
+            <legend>Friends Owe Me</legend>
 
             <table id="owed" class="table table-striped">
                 <tbody template instantiate="if owed.isEmpty">
@@ -166,11 +166,11 @@
                 </tbody>
             </table>
 
-            <p class="text-right"><a href="#" on-click="showPaid(updateOwed, $event)">Show Paid</a></p>
+            <p class="text-right"><a href="#" on-click="showPaid(updateOwed, $event)">Show Already Paid</a></p>
           </div>
 
           <div id="owe" class="row well">
-            <legend>You Owe</legend>
+            <legend>I Owe Friends</legend>
 
             <table id="owe" class="table table-striped">
               <tbody template instantiate="if owe.isEmpty">
@@ -209,7 +209,7 @@
 
             </table>
 
-            <p class="text-right"><a href="#" on-click="showPaid(updateOwe, $event)">Show Paid</a></p>
+            <p class="text-right"><a href="#" on-click="showPaid(updateOwe, $event)">Show Already Paid</a></p>
 
           </div>
 
