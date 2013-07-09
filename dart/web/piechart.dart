@@ -13,7 +13,7 @@ class PieChart extends WebComponent {
   int width = 250, height = 250, radius = 125;
   js.Proxy svg, chart, labels, d3 = js.retain(js.context.d3);
 
-  inserted() {
+  void inserted() {
     js.scoped(() {
       svg = d3.select("#split-chart").append("svg")
           .attr("width", width)
