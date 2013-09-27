@@ -146,7 +146,6 @@ func findUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-
 	var keys = make([]*datastore.Key, len(friends))
 	i := 0
 	for k := range friends {
@@ -230,7 +229,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 			}
 			err = datastore.Get(c, key, user)
 			if err == datastore.ErrNoSuchEntity {
-				panic("unknown user key");
+				panic("unknown user key")
 			}
 		} else {
 			value := recipient["value"].(string)
@@ -244,9 +243,9 @@ func bill(w http.ResponseWriter, r *http.Request) {
 
 					email, _ := template.ParseFiles("templates/new-bill-new-user.email")
 					tc := map[string]interface{}{
-						"Sender":    sender.Name,
-						"Note":      body["note"].(string),
-						"Amount":    strconv.FormatFloat(amount, 'f', 2, 32),
+						"Sender": sender.Name,
+						"Note":   body["note"].(string),
+						"Amount": strconv.FormatFloat(amount, 'f', 2, 32),
 					}
 					out := bytes.NewBuffer(nil)
 					if err := email.Execute(out, tc); err != nil {
@@ -418,21 +417,21 @@ func owed(w http.ResponseWriter, r *http.Request) {
 		total := float32(0.0)
 		for i, receiver := range receivers {
 			respReceivers[i] = map[string]interface{}{
-				"Name": getUserName(&receiver),
+				"Name":   getUserName(&receiver),
 				"Amount": bill.Amounts[i],
-				"Paid": paid[i],
+				"Paid":   paid[i],
 			}
-			total += bill.Amounts[i];
+			total += bill.Amounts[i]
 		}
 
 		resp = append(resp,
 			map[string]interface{}{
-			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
-			"Receivers": respReceivers,
-			"Note":      bill.Note,
-			"Key":       key.Encode(),
-			"Total":     total,
-		})
+				"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
+				"Receivers": respReceivers,
+				"Note":      bill.Note,
+				"Key":       key.Encode(),
+				"Total":     total,
+			})
 	}
 
 	encoder := json.NewEncoder(w)
@@ -480,12 +479,12 @@ func owe(w http.ResponseWriter, r *http.Request) {
 		}
 		resp = append(resp,
 			map[string]interface{}{
-			"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
-			"Sender":    sender.Name,
-			"Amount":    bill.Amounts[index],
-			"Paid":      paid[0],
-			"Note":      bill.Note,
-		})
+				"Timestamp": bill.Timestamp.Format("Mon, Jan 02 2006 15:04:05 MST"),
+				"Sender":    sender.Name,
+				"Amount":    bill.Amounts[index],
+				"Paid":      paid[0],
+				"Note":      bill.Note,
+			})
 	}
 
 	encoder := json.NewEncoder(w)
@@ -544,18 +543,18 @@ func payments(w http.ResponseWriter, r *http.Request) {
 
 	var resp map[string]interface{}
 	if len(payments) == 0 {
-		resp = map[string]interface{} {
+		resp = map[string]interface{}{
 			"PayKey":     "",
 			"PayFormUrl": config.PayFormUrl,
-			"Payments": payments,
+			"Payments":   payments,
 		}
 	} else {
 		payKey := getPayKey(c, key, payments, bills)
 
-		resp = map[string]interface{} {
+		resp = map[string]interface{}{
 			"PayKey":     payKey,
 			"PayFormUrl": config.PayFormUrl,
-			"Payments": payments,
+			"Payments":   payments,
 		}
 	}
 
@@ -587,7 +586,7 @@ func updateNote(w http.ResponseWriter, r *http.Request) {
 	bill.Note = body["note"].(string)
 	if _, err := datastore.Put(c, key, &bill); err != nil {
 		panic(err)
-    }
+	}
 }
 
 func updateName(w http.ResponseWriter, r *http.Request) {
@@ -600,7 +599,7 @@ func updateName(w http.ResponseWriter, r *http.Request) {
 	user.Name = body["name"].(string)
 	if _, err := datastore.Put(c, ukey, user); err != nil {
 		panic(err)
-    }
+	}
 }
 
 func buildPayment(c appengine.Context, previous *Bill, amount float32) map[string]interface{} {
@@ -611,9 +610,9 @@ func buildPayment(c appengine.Context, previous *Bill, amount float32) map[strin
 	}
 
 	return map[string]interface{}{
-		"Name":       sender.Name,
-		"Email":      sender.Email,
-		"Amount":     fmt.Sprintf("%.2f", amount),
+		"Name":   sender.Name,
+		"Email":  sender.Email,
+		"Amount": fmt.Sprintf("%.2f", amount),
 	}
 }
 
@@ -662,11 +661,11 @@ func checkEmail(email string) bool {
 func createUser(c appengine.Context, email string, name string) (key *datastore.Key, err error) {
 	u := User{
 		Email: email,
-		Name: name,
+		Name:  name,
 	}
 
 	return datastore.Put(c, datastore.NewIncompleteKey(c, "Users", nil), &u)
-	}
+}
 
 func sendEmail(c appengine.Context, to string, from string, body string) {
 	msg := &mail.Message{

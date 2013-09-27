@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"text/template"
 	"strings"
+	"text/template"
 )
 
 const payTmplString = `{
@@ -61,10 +61,10 @@ func getPayKey(c appengine.Context, sender *datastore.Key, recipients []map[stri
 	}
 
 	tc := map[string]interface{}{
-		"Sender":         sender.Encode(),
-		"Bills":          strings.Join(bills, ","),
-		"AppUrl":         config.AppUrl,
-		"Receivers":      strings.Join(receivers, ","),
+		"Sender":    sender.Encode(),
+		"Bills":     strings.Join(bills, ","),
+		"AppUrl":    config.AppUrl,
+		"Receivers": strings.Join(receivers, ","),
 	}
 	var data bytes.Buffer
 	payTmpl.Execute(&data, tc)
