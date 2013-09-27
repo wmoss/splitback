@@ -274,6 +274,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 			tc := map[string]interface{}{
 				"Recipient": user.Name,
 				"Sender":    sender.Name,
+				"Note":      body["note"].(string),
 				"Amount":    strconv.FormatFloat(amount, 'f', 2, 32),
 			}
 			if err := tmpl.Execute(out, tc); err != nil {

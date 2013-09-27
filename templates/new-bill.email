@@ -1,6 +1,6 @@
 Hi {{.Recipient}},
 
-You have a new bill from {{.Sender}} for ${{.Amount}}.
+You have a new bill from {{.Sender}}. You owe ${{.Amount}}{{if .Note}} for ${{.Note}}{{end}}.
 
 http://split-back.appspot.com
 
