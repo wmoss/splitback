@@ -1,0 +1,22 @@
+<link rel="import" href="packages/polymer/polymer.html">
+
+<polymer-element name="x-myinfo">
+  <template>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+  
+    <div class="row well">
+      <legend>My Info</legend>
+  
+      <div class="input-append">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" value="{{username}}">
+        
+        <span class="add-on" id="success" style="display: none"><i class="icon-ok"></i></span>        
+      </div>
+      
+      
+    </div>
+  </template>
+  
+  <script type="application/dart" src="myinfo.dart"></script>
+</polymer-element>

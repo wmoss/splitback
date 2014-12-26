@@ -49,7 +49,7 @@ func init() {
 	env = getEnv()
 
 	var configFile = "priv/paypal.json"
-	if strings.Contains(env["SERVER_SOFTWARE"], "Development") {
+  if strings.HasPrefix(appengine.ServerSoftware(), "Development") {
 		configFile = "priv/sandbox.json"
 	}
 
@@ -254,7 +254,7 @@ func bill(w http.ResponseWriter, r *http.Request) {
 					sendEmail(c, value, sender.Name, out.String())
 				}
 			} else {
-				http.Error(w, `{"error": "invalid email"}`, http.StatusBadRequest)
+				http.Error(w, `{"error": "Invalid recipient or email address"}`, http.StatusBadRequest)
 				return
 			}
 		}

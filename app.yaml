@@ -12,8 +12,14 @@ handlers:
   - url: /
     secure: always
     login: required
-    static_files: dart/web/out/web/main.html
-    upload: dart/web/out/web/main.html
+    static_files: dart/build/web/main.html
+    upload: dart/build/web/main.html
+
+  - url: /dart/
+    secure: always
+    login: required
+    static_files: dart/out/web/main.html
+    upload: dart/out/web/main.html
 
   - url: /rest/payIpn
     secure: always
@@ -24,8 +30,14 @@ handlers:
     login: required
     script: _go_app
 
+  - url: /dart/(.*)
+    secure: always
+    login: required
+    static_files: dart/out/web/\1
+    upload: dart/out/web/(.*)
+    
   - url: /(.*)
     secure: always
     login: required
-    static_files: dart/web/out/web/\1
-    upload: dart/web/out/web/(.*)
+    static_files: dart/build/web/\1
+    upload: dart/build/web/(.*)

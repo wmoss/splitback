@@ -5,6 +5,7 @@
         window.close();
       } else if (top.{{.CallbackFunction}}) {
         top.{{.CallbackFunction}}();
+        window.close();
       } else {
         alert('Please close the window and reload to continue');
       }

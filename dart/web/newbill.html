@@ -1,0 +1,53 @@
+<link rel="import" href="packages/polymer/polymer.html">
+
+<polymer-element name="x-newbill">
+  <template>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+  
+    <div class="row well">
+      <legend>Create A Bill</legend>
+
+      <div class="input-prepend">
+        <span class="add-on">$</span>
+        <input type="text" value="{{total}}" on-input="{{totalUpdated}}" class="input-small" placeholder="How much?">
+      </div>
+  
+      <div>
+        <input type="text" class="input-large" value="{{notes}}" placeholder="What for?">
+      </div>
+
+      <template repeat="{{user in recipients}}">      
+        <div>
+          <div class="input-prepend input-append">          
+            <button type="button" class="btn {{user.paidClass}}" style="width: 70px" on-click="{{togglePaid}}" data-user-id={{user.id}}>
+              {{user.paidText}}
+            </button>
+            <input type="text" autocomplete="off" value="{{user.value}}" class="input-medium recipient" 
+                   list="datalist-{{user.id}}" on-input="{{maybeTest}}" placeholder="Who else?">
+            <datalist id="datalist-{{user.id}}">        
+              <template repeat="{{name in friends.keys}}">      
+                <option value="{{name}}">
+              </template>
+            </datalist>
+            
+            <!-- color: {{colors[$index]}}; -->
+            <span class="add-on user-amount drag-cursor" style="width: 50px;" on-mouseDown="{{dragAmountStart}}">
+              {{user.amount.toStringAsFixed(2)}} <!-- should be empty not 0 if name is "" -->
+            </span>
+          </div>
+        </div>
+      </template>
+      
+      <button type="submit" class="btn" on-click="{{add}}">Send Bill</button>
+      
+      <div id="bill-error" class="alert alert-block alert-error fade in" hidden="true">
+        <button type="button" class="close" on-click="{{hideAlert}}">x</button>
+        <p style="font-weight: bold"></p>
+      </div>
+      
+    </div>
+  
+  </template>
+  
+  <script type="application/dart" src="newbill.dart"></script>
+</polymer-element>

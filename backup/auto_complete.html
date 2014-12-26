@@ -1,0 +1,17 @@
+<link rel="import" href="packages/polymer/polymer.html">
+
+<polymer-element name="auto-complete">
+  <template>
+    <content></content>
+    
+    
+    <template if="{{results.length > 0}}">
+      <ul style="left: {{left}}px; top: {{top}}px; width: {{width}}px;">
+        <template repeat="{{result in results}}">
+          <li on-click="{{select}}">{{result}}</li>
+        </template>
+      </ul>
+    </template>
+  </template>
+  <script type="application/dart" src="auto_complete.dart"></script>
+</polymer-element>

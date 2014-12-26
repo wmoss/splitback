@@ -1,0 +1,32 @@
+<link rel="import" href="packages/polymer/polymer.html">
+
+<polymer-element name="x-join">
+  <template>
+    <div id="join" class="modal fade">
+      <div class="modal-header">
+        <h3>Join</h3>
+      </div>
+      <div class="modal-body">
+        <form action="/rest/signup" method="post">
+
+          <div class="control-group {{nameMissing ? 'error': ''}}" id="joinNameContainer">
+            <label class="control-label">
+              Name
+              <template if="{{nameMissing}}"> *required*</template>
+            </label>
+            <div class="controls">
+              <input type="text" name="name" placeholder="Austin Powers" on-focus="{{signupNameFocus}}">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Join</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </template>
+
+  <script type="application/dart" src="join.dart"></script>
+</polymer-element>

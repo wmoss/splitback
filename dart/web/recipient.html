@@ -1,0 +1,30 @@
+<link rel="import" href="packages/polymer/polymer.html">
+
+<polymer-element name="x-recipient" extends="div">
+  <template>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+ 
+    <div>
+      <div class="input-prepend input-append">          
+        <button type="button" class="btn {{paidClass}}" style="width: 70px" on-click="{{togglePaid}}" data-user-id={{user.id}}>
+          {{user.paidText}}
+        </button>
+        <input type="text" autocomplete="off" value="{{user.value}}" class="input-medium recipient" 
+               list="datalist-{{user.id}}" on-change="{{changed}}" placeholder="Who else?">
+        <datalist id="datalist-{{user.id}}">        
+          <template repeat="{{name in friends.keys}}">      
+            <option value="{{name}}">
+          </template>
+        </datalist>
+        
+        <!-- color: {{colors[$index]}}; -->
+        <span class="add-on user-amount drag-cursor" style="width: 50px;" on-mouseDown="{{dragAmountStart}}">
+          {{user.amount.toStringAsFixed(2)}} <!-- should be empty not 0 if name is "" -->
+        </span>
+      </div>
+    </div>
+  
+  </template>
+
+  <script type="application/dart" src="recipient.dart"></script>
+</polymer-element>

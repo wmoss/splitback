@@ -1,0 +1,134 @@
+<link rel="import" href="packages/polymer/polymer.html">
+<link rel="import" href="newbill.html">
+<link rel="import" href="settlebills.html">
+<link rel="import" href="myinfo.html">
+    
+<polymer-element name="x-splitback">
+  <template>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+  
+    <!--<x-join></x-join>-->
+    
+    <legend><h1>Splitback - {{userName}}</h1></legend>
+
+    <div class="container-fluid">
+      <div class="row-fluid">
+        
+        <div class="span3" style="min-width: 300px; max-width: 340px;">
+
+          <x-newbill username="{{userName}}"></x-newbill>
+
+          <x-settlebills></x-settlebills>
+
+          <x-myinfo username="{{userName}}"></x-myinfo>
+        </div>
+
+        <div class="span9">
+          <div class="row well">
+            <legend>Friends Owe Me</legend>
+
+            <table id="owed" class="table table-striped">
+                <tbody template if="{{owed.isEmpty}}">
+                  <tr>
+                    <td style="text-align: center">Nobody owes you anything!</td>
+                  </tr>
+                </tbody>
+
+                <thead template if="{{!owed.isEmpty}}">
+                  <tr>
+                    <th class="span4">Date</th>
+                    <th class="span4">Notes</th>
+                    <th class="span7">Debts</th>
+                    <th class="span1"></th>
+                  </tr>
+                </thead>
+                
+                <tbody template repeat="{{bill in owed}}">
+                  <tr>
+                    <td>
+                      {{bill['Timestamp']}}
+                    </td>
+
+                    <td on-click="{{editNote}}" data-bill-key="{{bill['Key']}}">
+                      <div>{{bill['Note']}}</div>
+                    </td>
+
+                    <td>
+                      <template repeat="{{receiver in bill['Receivers']}}">
+                        <div>
+                          <template if="{{receiver['Paid']}}">
+                            <span class="label label-success bill-status-label">Paid</span>
+                          </template>
+                          <template if="{{!receiver['Paid']}}">
+                            <span class="label label-important bill-status-label">Unpaid</span>
+                          </template>
+                          {{receiver['Name']}} : ${{receiver['Amount'].toStringAsFixed(2)}}
+                        </div>
+                      </template>
+                      <div>
+                        <span class="label bill-status-label">Total:</span>
+                        <span>${{bill['Total'].toStringAsFixed(2)}}</span>
+                      </div>
+                    </td>
+
+                     <td>
+                       <button type="submit" class="close" on-click="{{removeBill}}" data-key="{{bill['Key']}}">x</button>
+                     </td>
+                   </tr>
+                </tbody>
+            </table>
+
+            <p class="text-right"><a href="#" on-click="{{showPaid}}" data-list="owed">Show Already Paid</a></p>
+          </div>
+
+          <div id="owe" class="row well">
+            <legend>I Owe Friends</legend>
+
+            <table id="owe" class="table table-striped">
+              <tbody template if="{{owe.isEmpty}}">
+                <tr>
+                  <td style="text-align: center">You don't owe anybody anything!</td>
+                </tr>
+              </tbody>
+              
+              <thead template if="{{!owe.isEmpty}}">
+                <tr>
+                  <th class="span4">Date</th>
+                  <th class="span4">Notes</th>
+                  <th class="span7">Debts</th>
+                </tr>
+              </thead>
+
+              <tbody template repeat="{{bill in owe}}">
+                <tr>
+                  <td>
+                    {{bill['Timestamp']}}
+                  </td>
+
+                  <td>
+                    {{bill['Note']}}
+                  </td>
+
+                  <td>
+                    <div>
+                      <template if="{{bill['Paid']}}"><span class="label label-success bill-status-label">Paid</span></template>
+                      <template if="{{!bill['Paid']}}"><span class="label label-important bill-status-label">Unpaid</span></template>
+                      {{bill['Sender']}} : ${{bill['Amount'].toStringAsFixed(2)}}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+
+            </table>
+
+            <p class="text-right"><a href="#" on-click="{{showPaid}}" data-list="owe">Show Already Paid</a></p>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </template>
+  
+  <script type="application/dart" src="splitback.dart"></script>
+</polymer-element>

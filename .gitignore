@@ -5,3 +5,6 @@ dart/.buildlog
 dart/packages
 dart/web/out
 dart/pubspec.lock
+dart/.pub
+dart/out
+dart/build
