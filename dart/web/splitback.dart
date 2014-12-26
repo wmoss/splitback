@@ -66,7 +66,7 @@ class SplitbackElement extends PolymerElement {
     String key = target.attributes['data-key'];
 	  
 	  var data = JSON.encode({'key': key});
-	  HttpRequest.request('rest/remove', method: 'POST', sendData: data)
+	  HttpRequest.request('/rest/remove', method: 'POST', sendData: data)
 	  .then((_) => owed.removeWhere((bill) => bill["Key"] == key));
 	  //We should handle the error case
 	}
@@ -81,7 +81,7 @@ class SplitbackElement extends PolymerElement {
 	      var data = JSON.encode({'key': key,
 	                              'note': edit.value,
 	                              });
-	      HttpRequest.request('rest/updateNote', method: 'POST', sendData: data)
+	      HttpRequest.request('/rest/updateNote', method: 'POST', sendData: data)
 	      .then((_) {
 	        //This could be much more efficiently done with an index, but we don't have those yet
 	        Map<String, Object> bill = owed.firstWhere((b) => b['Key'] == key);

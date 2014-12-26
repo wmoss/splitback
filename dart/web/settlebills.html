@@ -2,20 +2,18 @@
 
 <polymer-element name="x-settlebills">
   <template>
-    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet">
   
     <div class="row well">
       <legend>Settle Bills</legend>
   
-      <div class="row-fluid">
+      <div class="row">
         <div id="pay-failed" class="alert alert-block alert-error fade in" hidden="true">
           <button type="button" class="close" on-click="{{hideAlert}}">x</button>
           <p><strong>Your payment failed.</strong></p>
         </div>
       </div>
-  
-      <button type="submit" id="pay-button" class="btn" disabled>Pay All</button>
-  
+    
       <template if="{{ payments.isEmpty }}" class="text-center">
         <p>You have no bills to settle.</p>
       </template>
@@ -27,6 +25,9 @@
           </div>
         </div>
       </template>
+      
+      <button type="submit" id="pay-button" class="btn btn-default" disabled>Pay All</button>
+      
     </div>
   </template>
   

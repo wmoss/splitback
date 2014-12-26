@@ -5,16 +5,23 @@
     
 <polymer-element name="x-splitback">
   <template>
-    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+    <style>
+      .sidebar {
+        min-width: 300px; 
+        max-width: 340px;
+        padding-right: 35px !important;
+      }
+    </style>
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet">
   
     <!--<x-join></x-join>-->
     
     <legend><h1>Splitback - {{userName}}</h1></legend>
 
     <div class="container-fluid">
-      <div class="row-fluid">
+      <div class="row">
         
-        <div class="span3" style="min-width: 300px; max-width: 340px;">
+        <div class="col-md-3 sidebar">
 
           <x-newbill username="{{userName}}"></x-newbill>
 
@@ -23,7 +30,7 @@
           <x-myinfo username="{{userName}}"></x-myinfo>
         </div>
 
-        <div class="span9">
+        <div class="col-md-9">
           <div class="row well">
             <legend>Friends Owe Me</legend>
 
@@ -57,16 +64,16 @@
                       <template repeat="{{receiver in bill['Receivers']}}">
                         <div>
                           <template if="{{receiver['Paid']}}">
-                            <span class="label label-success bill-status-label">Paid</span>
+                            <span class="label label-success">Paid</span>
                           </template>
                           <template if="{{!receiver['Paid']}}">
-                            <span class="label label-important bill-status-label">Unpaid</span>
+                            <span class="label label-danger">Unpaid</span>
                           </template>
                           {{receiver['Name']}} : ${{receiver['Amount'].toStringAsFixed(2)}}
                         </div>
                       </template>
                       <div>
-                        <span class="label bill-status-label">Total:</span>
+                        <span class="label label-default">Total:</span>
                         <span>${{bill['Total'].toStringAsFixed(2)}}</span>
                       </div>
                     </td>
@@ -111,8 +118,8 @@
 
                   <td>
                     <div>
-                      <template if="{{bill['Paid']}}"><span class="label label-success bill-status-label">Paid</span></template>
-                      <template if="{{!bill['Paid']}}"><span class="label label-important bill-status-label">Unpaid</span></template>
+                      <template if="{{bill['Paid']}}"><span class="label label-success">Paid</span></template>
+                      <template if="{{!bill['Paid']}}"><span class="label label-danger">Unpaid</span></template>
                       {{bill['Sender']}} : ${{bill['Amount'].toStringAsFixed(2)}}
                     </div>
                   </td>

@@ -2,18 +2,21 @@
 
 <polymer-element name="x-myinfo">
   <template>
-    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet">
   
     <div class="row well">
       <legend>My Info</legend>
   
-      <div class="input-append">
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" value="{{username}}">
-        
-        <span class="add-on" id="success" style="display: none"><i class="icon-ok"></i></span>        
-      </div>
-      
+      <form class="form-inline">
+        <div class="form-group has-feedback">
+          <label for="name" class="control-label">Name</label>
+          <input type="text" id="name" value="{{username}}" class="form-control" aria-describedby="inputSuccess">
+          
+          <span class="glyphicon glyphicon-ok form-control-feedback hidden" aria-hidden="true"></span> 
+          <span id="inputSuccess" class="sr-only">(success)</span>
+          
+        </div>    
+      </form>
       
     </div>
   </template>
