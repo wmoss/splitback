@@ -1,6 +1,5 @@
 import 'package:polymer/polymer.dart';
 import 'package:uuid/uuid.dart';
-import 'dart:html' show DivElement;
 
 
 @CustomTag('x-recipient')

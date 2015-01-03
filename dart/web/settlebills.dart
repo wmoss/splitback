@@ -8,8 +8,6 @@ import 'streams.dart';
 
 @CustomTag('x-settlebills')
 class SettleBills extends PolymerElement {
-  bool get applyAuthorStyles => true;
-
   JsObject paypalFlow;
   @observable String payFormUrl;
   @observable String payKey;
@@ -36,25 +34,38 @@ class SettleBills extends PolymerElement {
     paypalFlow = new JsObject(context['PAYPAL']['apps']['DGFlow']);
     
     updatePayments();
+    updatePaypalKey();
+    
+    this.shadowRoot.querySelector("#pay-square-cash").onClick.listen((e) {
+      window.location.assign("/rest/getOAuthToken");
+    });
   }
+  
+  String get totalOwed => payments.fold(0, (last, payment) => last + payment["Amount"]);
   
   void updatePayments() {
     HttpRequest.getString('/rest/payments')
     .then((raw) {
+      var previousOwed = totalOwed;
       var resp = JSON.decode(raw);
       payments.clear();
-      payments.addAll(resp["Payments"]);
-      payKey = resp["PayKey"];
-      payFormUrl = resp["PayFormUrl"];
-      /* TODO: Replace with bindProperty when that works better */
-      //notifyProperty(this, const Symbol('paymentsEmpty'));
-      
-      var el = this.shadowRoot.querySelector("#pay-button");
-      el.attributes.remove("disabled");
-      el.onClick.listen((e) => paypalFlow.callMethod('startFlow', [payFormUrl + '?expType=light&payKey=' + payKey]));
+      payments.addAll(resp);
+      this.notifyPropertyChange(const Symbol('totalOwed'), previousOwed, totalOwed);
     });
   }
 
+  void updatePaypalKey() {
+    HttpRequest.getString('/rest/paypalPayKey')
+     .then((raw) {
+       var resp = JSON.decode(raw);
+       payKey = resp["PayKey"];
+       payFormUrl = resp["PayFormUrl"];       
+       var el = this.shadowRoot.querySelector("#pay-button");
+       el.attributes.remove("disabled");
+       el.onClick.listen((e) => paypalFlow.callMethod('startFlow', [payFormUrl + '?expType=light&payKey=' + payKey]));
+     });    
+  }
+  
   void hideAlert(Event event, var detail, var target) {
     target.parent.hidden = true;
   }

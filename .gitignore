@@ -8,3 +8,5 @@ dart/pubspec.lock
 dart/.pub
 dart/out
 dart/build
+splitback/src
+splitback/pkg

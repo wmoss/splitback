@@ -33,7 +33,12 @@ const receiverTmplString = `{
       "paymentType":"PERSONAL"
     }`
 
-func getPayKey(c appengine.Context, sender *datastore.Key, recipients []map[string]interface{}, bills []string) string {
+func getPayKey(c appengine.Context, sender *datastore.Key, paymentsOwed map[*datastore.Key]*PaymentOwed) string {
+
+	if len(paymentsOwed) == 0 {
+		return ""
+	}
+
 	payTmpl, err := template.New("pay").Parse(payTmplString)
 	if err != nil {
 		panic(err)
@@ -44,13 +49,15 @@ func getPayKey(c appengine.Context, sender *datastore.Key, recipients []map[stri
 		panic(err)
 	}
 
-	receivers := make([]string, len(recipients))
-	for i, recipient := range recipients {
+	receivers := make([]string, len(paymentsOwed))
+	bills := make([]string, 0, len(paymentsOwed))
+	i := 0
+	for _, payment := range paymentsOwed {
 		out := bytes.NewBuffer(nil)
 
 		tc := map[string]interface{}{
-			"RecipientEmail": recipient["Email"].(string),
-			"Amount":         recipient["Amount"].(string),
+			"RecipientEmail": payment.Sender.Email,
+			"Amount":         payment.Amount,
 			"EmailPrefix":    config.EmailPrefix,
 		}
 		if err := receiverTmpl.Execute(out, tc); err != nil {
@@ -58,6 +65,9 @@ func getPayKey(c appengine.Context, sender *datastore.Key, recipients []map[stri
 		}
 
 		receivers[i] = out.String()
+
+		bills = append(bills, payment.Bills...)
+		i++
 	}
 
 	tc := map[string]interface{}{

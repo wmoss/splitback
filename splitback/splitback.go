@@ -46,6 +46,11 @@ func init() {
 	http.HandleFunc("/rest/updateNote", updateNote)
 	http.HandleFunc("/rest/updateName", updateName)
 
+	http.HandleFunc("/rest/paypalPayKey", paypalPayKey)
+
+	http.HandleFunc("/rest/getOAuthToken", getOAuthToken)
+	http.HandleFunc("/rest/oauth2callback", oauth2Callback)
+
 	env = getEnv()
 
 	var configFile = "priv/paypal.json"
@@ -491,75 +496,89 @@ func owe(w http.ResponseWriter, r *http.Request) {
 	encoder.Encode(resp)
 }
 
-func payments(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
+type PaymentOwed struct {
+	Sender *User
+	Amount float32
+	Bills  []string
+}
+
+func unpaidBills(c appengine.Context) map[*datastore.Key]*PaymentOwed {
+	bills := make(map[*datastore.Key]*PaymentOwed)
 
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
 
 	q := datastore.NewQuery("Bills").
-		Filter("Receivers =", key).
-		Order("Sender")
+		Filter("Receivers =", key)
 
-	previous := Bill{}
-	amount := float32(0.0)
-	bills := make([]string, 0)
-	first := true
-	payments := make([]map[string]interface{}, 0)
 	for t := q.Run(c); ; {
 		var bill Bill
 		billKey, err := t.Next(&bill)
 		if err == datastore.Done {
-			if !first {
-				payments = append(payments, buildPayment(c, &previous, amount))
-			}
 			break
-		}
-		if err != nil {
+		} else if err != nil {
 			panic(err)
-		}
-
-		if bill.Sender.Equal(key) {
+		} else if bill.Sender.Equal(key) {
 			continue
 		}
 
 		index := findInBill(&bill, key)
-
 		if datePaid := bill.DatePaid[index]; datePaid.After(time.Unix(0, 0)) {
 			continue
 		}
 
-		if bill.Sender.Equal(previous.Sender) || first {
-			amount += bill.Amounts[index]
-		} else {
-			payments = append(payments, buildPayment(c, &previous, amount))
-			amount = bill.Amounts[index]
+		var payment *PaymentOwed
+		var ok bool
+		if payment, ok = bills[bill.Sender]; !ok {
+			var sender User
+			err = datastore.Get(c, bill.Sender, &sender)
+			if err != nil {
+				panic(err)
+			}
+			payment = &PaymentOwed{
+				Sender: &sender,
+				Amount: 0.0,
+				Bills:  make([]string, 0),
+			}
+			bills[bill.Sender] = payment
 		}
 
-		bills = append(bills, billKey.Encode())
-
-		first = false
-		previous = bill
+		payment.Amount += bill.Amounts[index]
+		payment.Bills = append(payment.Bills, billKey.Encode())
 	}
 
-	var resp map[string]interface{}
-	if len(payments) == 0 {
-		resp = map[string]interface{}{
-			"PayKey":     "",
-			"PayFormUrl": config.PayFormUrl,
-			"Payments":   payments,
-		}
-	} else {
-		payKey := getPayKey(c, key, payments, bills)
+	return bills
+}
 
-		resp = map[string]interface{}{
-			"PayKey":     payKey,
-			"PayFormUrl": config.PayFormUrl,
-			"Payments":   payments,
-		}
+func paypalPayKey(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	_, key := getUserBy(c, "Email", user.Current(c).Email)
+
+	resp := map[string]interface{}{
+		"PayKey":     getPayKey(c, key, unpaidBills(c)),
+		"PayFormUrl": config.PayFormUrl,
 	}
 
 	encoder := json.NewEncoder(w)
 	encoder.Encode(resp)
+}
+
+func payments(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	paymentsOwed := unpaidBills(c)
+
+	payments := make([]map[string]interface{}, 0)
+	for _, payment := range paymentsOwed {
+		payments = append(payments,
+			map[string]interface{}{
+				"Name":   payment.Sender.Name,
+				"Amount": payment.Amount,
+			})
+	}
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(payments)
 }
 
 func updateNote(w http.ResponseWriter, r *http.Request) {
@@ -599,20 +618,6 @@ func updateName(w http.ResponseWriter, r *http.Request) {
 	user.Name = body["name"].(string)
 	if _, err := datastore.Put(c, ukey, user); err != nil {
 		panic(err)
-	}
-}
-
-func buildPayment(c appengine.Context, previous *Bill, amount float32) map[string]interface{} {
-	var sender User
-	err := datastore.Get(c, previous.Sender, &sender)
-	if err != nil {
-		panic(err)
-	}
-
-	return map[string]interface{}{
-		"Name":   sender.Name,
-		"Email":  sender.Email,
-		"Amount": fmt.Sprintf("%.2f", amount),
 	}
 }
 
@@ -684,4 +689,26 @@ func getUserName(user *User) string {
 		return user.Email
 	}
 	return user.Name
+}
+
+func getOAuthToken(w http.ResponseWriter, r *http.Request) {
+	url := requestOAuthRedirectUrl()
+	http.Redirect(w, r, url, http.StatusFound)
+}
+
+func oauth2Callback(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	token := exchangeCode(c, r.FormValue("code"))
+
+	client := getAuthedClient(c, token)
+	payments := unpaidBills(c)
+
+	user, _ := getUserBy(c, "Email", user.Current(c).Email)
+	from := fmt.Sprintf("%s <%s>", getUserName(user), user.Email)
+
+	for _, payment := range payments {
+		sendSquareCashEmail(client, from, payment)
+	}
+
+	http.Redirect(w, r, "/dart/", http.StatusFound)
 }

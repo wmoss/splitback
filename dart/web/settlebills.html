@@ -17,17 +17,25 @@
       <template if="{{ payments.isEmpty }}" class="text-center">
         <p>You have no bills to settle.</p>
       </template>
-  
-      <template repeat="{{payment in payments}}">
-        <div>
-          <div>
-            {{payment["Name"]}} : ${{payment["Amount"]}}
-          </div>
-        </div>
-      </template>
       
-      <button type="submit" id="pay-button" class="btn btn-default" disabled>Pay All</button>
+      <button type="submit" id="pay-button" class="btn btn-default" disabled>Pay with Paypal</button>
       
+      <button id="pay-square-cash" class="btn btn-default">Pay with Square Cash</button>
+      
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Total</th>
+            <th>{{totalOwed}}</th>
+          </tr>
+        </thead>
+        <tbody template repeat="{{payment in payments}}">
+          <tr>
+            <td>{{payment["Name"]}}</td>
+            <td>${{payment["Amount"]}}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </template>
   
