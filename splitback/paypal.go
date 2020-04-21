@@ -33,7 +33,7 @@ const receiverTmplString = `{
       "paymentType":"PERSONAL"
     }`
 
-func getPayKey(c appengine.Context, sender *datastore.Key, paymentsOwed map[*datastore.Key]*PaymentOwed) string {
+func getPayKey(c appengine.Context, sender *datastore.Key, paymentsOwed []*PaymentOwed) string {
 
 	if len(paymentsOwed) == 0 {
 		return ""
@@ -66,7 +66,7 @@ func getPayKey(c appengine.Context, sender *datastore.Key, paymentsOwed map[*dat
 
 		receivers[i] = out.String()
 
-		bills = append(bills, payment.Bills...)
+		bills = append(bills, payment.BillKeysEncoded...)
 		i++
 	}
 

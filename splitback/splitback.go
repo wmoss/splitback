@@ -3,6 +3,7 @@ package splitback
 import (
 	"appengine"
 	"appengine/datastore"
+	"appengine/delay"
 	"appengine/mail"
 	"appengine/user"
 	"bytes"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"code.google.com/p/goauth2/oauth"
 )
 
 type Config struct {
@@ -30,6 +32,7 @@ type Config struct {
 
 var config Config = Config{}
 var env map[string]string
+var findSquareEmailFunc *delay.Function = delay.Func("key", findSquareEmail)
 
 func init() {
 	http.HandleFunc("/rest/signup", signup)
@@ -54,7 +57,7 @@ func init() {
 	env = getEnv()
 
 	var configFile = "priv/paypal.json"
-  if strings.HasPrefix(appengine.ServerSoftware(), "Development") {
+	if strings.HasPrefix(appengine.ServerSoftware(), "Development") {
 		configFile = "priv/sandbox.json"
 	}
 
@@ -499,11 +502,12 @@ func owe(w http.ResponseWriter, r *http.Request) {
 type PaymentOwed struct {
 	Sender *User
 	Amount float32
-	Bills  []string
+	Bills  []*Bill
+	BillKeysEncoded []string
 }
 
-func unpaidBills(c appengine.Context) map[*datastore.Key]*PaymentOwed {
-	bills := make(map[*datastore.Key]*PaymentOwed)
+func unpaidBills(c appengine.Context) []*PaymentOwed {
+	bills := make(map[string]*PaymentOwed)
 
 	_, key := getUserBy(c, "Email", user.Current(c).Email)
 
@@ -528,7 +532,7 @@ func unpaidBills(c appengine.Context) map[*datastore.Key]*PaymentOwed {
 
 		var payment *PaymentOwed
 		var ok bool
-		if payment, ok = bills[bill.Sender]; !ok {
+		if payment, ok = bills[bill.Sender.Encode()]; !ok {
 			var sender User
 			err = datastore.Get(c, bill.Sender, &sender)
 			if err != nil {
@@ -537,16 +541,23 @@ func unpaidBills(c appengine.Context) map[*datastore.Key]*PaymentOwed {
 			payment = &PaymentOwed{
 				Sender: &sender,
 				Amount: 0.0,
-				Bills:  make([]string, 0),
+				Bills:  make([]*Bill, 0),
+				BillKeysEncoded:  make([]string, 0),
 			}
-			bills[bill.Sender] = payment
+			bills[bill.Sender.Encode()] = payment
 		}
 
 		payment.Amount += bill.Amounts[index]
-		payment.Bills = append(payment.Bills, billKey.Encode())
+		payment.Bills = append(payment.Bills, &bill)
+		payment.BillKeysEncoded = append(payment.BillKeysEncoded, billKey.Encode())
 	}
 
-	return bills
+	list := make([]*PaymentOwed, 0, len(bills))
+	for _, bill := range bills {
+		list = append(list, bill)
+	}
+
+	return list
 }
 
 func paypalPayKey(w http.ResponseWriter, r *http.Request) {
@@ -700,15 +711,27 @@ func oauth2Callback(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	token := exchangeCode(c, r.FormValue("code"))
 
-	client := getAuthedClient(c, token)
-	payments := unpaidBills(c)
+	send_date := time.Now().Format("2004/04/16")
 
-	user, _ := getUserBy(c, "Email", user.Current(c).Email)
-	from := fmt.Sprintf("%s <%s>", getUserName(user), user.Email)
+	if false {
+		client := getAuthedClient(c, token)
+		payments := unpaidBills(c)
 
-	for _, payment := range payments {
-		sendSquareCashEmail(client, from, payment)
+		user, _ := getUserBy(c, "Email", user.Current(c).Email)
+		from := fmt.Sprintf("%s <%s>", getUserName(user), user.Email)
+
+		for _, payment := range payments {
+			sendSquareCashEmail(client, from, payment)
+		}
 	}
 
+	findSquareEmailFunc.Call(c, token, send_date)
+
 	http.Redirect(w, r, "/dart/", http.StatusFound)
+}
+
+func findSquareEmail(c appengine.Context, token *oauth.Token, date string) {
+	client := getAuthedClient(c, token)
+
+	checkSquareCashEmails(c, client, date)
 }

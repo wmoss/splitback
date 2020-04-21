@@ -17,11 +17,7 @@ class SplitbackElement extends PolymerElement {
   
   @override
   void domReady() {
-    streams.billSubmitted.listen((e) {
-      print("sill submitted");
-   
-      updateOwed();
-    });
+    streams.billSubmitted.listen((e) => updateOwed());
     streams.paymentSucceeded.listen((e) => updateOwe());
 	  
 	  HttpRequest.getString('/rest/name').then(updateName);
@@ -40,7 +36,6 @@ class SplitbackElement extends PolymerElement {
 	}
 	
 	void updateOwed([bool paid = false]) {
-	  print("Updating owed");
 	  var url = '/rest/owed' + (paid ? '?paid' : '');
 	  HttpRequest.getString(url)
 	  .then((resp) {
@@ -58,7 +53,6 @@ class SplitbackElement extends PolymerElement {
 	  } else {
 	    userName = name['name'];
 	    streams.userNameController.add(userName);
-	    print("user: " + userName);
 	  }
 	}
 	

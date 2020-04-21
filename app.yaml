@@ -25,6 +25,11 @@ handlers:
     secure: always
     script: _go_app
 
+  - url: /_ah/queue/go/delay
+    secure: always
+    login: admin
+    script: _go_app
+
   - url: /rest/.*
     secure: always
     login: required
@@ -35,7 +40,7 @@ handlers:
     login: required
     static_files: dart/out/web/\1
     upload: dart/out/web/(.*)
-    
+
   - url: /(.*)
     secure: always
     login: required
